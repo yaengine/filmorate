@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class UserControllerTest {
-    UserController UserController = new UserController();
+    UserController userController = new UserController();
     User user;
 
     @BeforeEach
@@ -26,85 +26,85 @@ public class UserControllerTest {
 
     @Test
     void create() {
-        User usr = UserController.create(user);
+        User usr = userController.create(user);
         assertEquals(user, usr, "Пользователь не создался");
     }
 
     @Test
     void createWithEmptyEmail() {
-        User usr = UserController.create(user);
+        User usr = userController.create(user);
         usr.setEmail("");
-        assertThrows(ValidationException.class, () -> UserController.update(usr), "Создание пользователя с  " +
+        assertThrows(ValidationException.class, () -> userController.update(usr), "Создание пользователя с  " +
                 "пустым полем email должно приводить к исключению");
     }
 
     @Test
     void createWithEmptyLogin() {
-        User usr = UserController.create(user);
+        User usr = userController.create(user);
         usr.setLogin("");
-        assertThrows(ValidationException.class, () -> UserController.update(usr), "Создание пользователя с пустым " +
+        assertThrows(ValidationException.class, () -> userController.update(usr), "Создание пользователя с пустым " +
                 "полем login должно приводить к исключению");
     }
 
     @Test
     void createWithBirthdayInFuture() {
-        User usr = UserController.create(user);
+        User usr = userController.create(user);
         usr.setBirthday(LocalDate.now().plusDays(1));
-        assertThrows(ValidationException.class, () -> UserController.update(usr), "Создание пользователя " +
+        assertThrows(ValidationException.class, () -> userController.update(usr), "Создание пользователя " +
                 "полем с днем рождения из будущего должно приводить к исключению");
     }
 
     @Test
     void createWithEmptyName() {
         user.setName("");
-        User usr = UserController.create(user);
+        User usr = userController.create(user);
         assertEquals(usr.getName(), user.getLogin(), "При создании пользователя с " +
                 "пустым полем name, оно должно заполняться из поля login");
     }
 
     @Test
     void update() {
-        User usr = UserController.create(user);
-        User usr1 = UserController.update(usr);
+        User usr = userController.create(user);
+        User usr1 = userController.update(usr);
         assertEquals(usr, usr1, "Пользователь не обновился");
     }
 
     @Test
     void updateWithEmptyEmail() {
-        User usr = UserController.update(UserController.create(user));
+        User usr = userController.update(userController.create(user));
         usr.setEmail("");
-        assertThrows(ValidationException.class, () -> UserController.update(usr), "Обновление пользователя с  " +
+        assertThrows(ValidationException.class, () -> userController.update(usr), "Обновление пользователя с  " +
                 "пустым полем email должно приводить к исключению");
     }
 
     @Test
     void updateWithEmptyLogin() {
-        User usr = UserController.update(UserController.create(user));
+        User usr = userController.update(userController.create(user));
         usr.setLogin("");
-        assertThrows(ValidationException.class, () -> UserController.update(usr), "Обновление пользователя с пустым " +
+        assertThrows(ValidationException.class, () -> userController.update(usr), "Обновление пользователя с пустым " +
                 "полем login должно приводить к исключению");
     }
 
     @Test
     void updateWithBirthdayInFuture() {
-        User usr = UserController.update(UserController.create(user));
+        User usr = userController.update(userController.create(user));
         usr.setBirthday(LocalDate.now().plusDays(1));
-        assertThrows(ValidationException.class, () -> UserController.update(usr), "Обновление пользователя " +
+        assertThrows(ValidationException.class, () -> userController.update(usr), "Обновление пользователя " +
                 "полем с днем рождения из будущего должно приводить к исключению");
     }
 
     @Test
     void updateWithEmptyName() {
-        User usr = UserController.create(user);
+        User usr = userController.create(user);
         usr.setName("");
-        User usr1 = UserController.update(usr);
+        User usr1 = userController.update(usr);
         assertEquals(usr1.getName(), usr.getLogin(), "При обновлении пользователя с " +
                 "пустым полем name, оно должно заполняться из поля login");
     }
 
     @Test
     void findAll() {
-        User usr = UserController.create(user);
-        assertTrue(UserController.findAll().contains(usr), "Пользователь не найден");
+        User usr = userController.create(user);
+        assertTrue(userController.findAll().contains(usr), "Пользователь не найден");
     }
 }
