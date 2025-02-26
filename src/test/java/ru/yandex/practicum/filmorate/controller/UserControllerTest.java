@@ -8,6 +8,7 @@ import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.InMemoryUserStorage;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,6 +29,7 @@ public class UserControllerTest {
                 .email("user@email.com")
                 .birthday(LocalDate.parse("2001-10-05"))
                 .login("UserLogin")
+                .friends(new HashSet<>())
                 .build();
     }
 

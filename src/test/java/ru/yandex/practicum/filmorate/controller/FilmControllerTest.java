@@ -8,6 +8,7 @@ import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage.InMemoryFilmStorage;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +22,7 @@ public class FilmControllerTest {
     @BeforeEach
     void beforeEach() {
         inMemoryFilmStorage = new InMemoryFilmStorage();
-        filmService = new FilmService(inMemoryFilmStorage);
+        filmService = new FilmService(inMemoryFilmStorage, null);
         filmController = new FilmController(filmService);
         film = Film.builder()
                 .id(1L)
@@ -29,6 +30,7 @@ public class FilmControllerTest {
                 .description("FilmDescr")
                 .releaseDate(LocalDate.parse("2001-10-05"))
                 .duration(100)
+                .likes(new HashSet<>())
                 .build();
     }
 
