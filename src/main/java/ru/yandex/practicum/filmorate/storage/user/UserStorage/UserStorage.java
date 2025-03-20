@@ -12,4 +12,6 @@ public interface UserStorage {
     public User update(User newUser);
 
     public User findUserById(long id);
+
+    public void addFriend(long userId, long friendId);
 }
