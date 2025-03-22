@@ -4,10 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,7 +14,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @Qualifier("inMemoryUserStorage")
-public class InMemoryUserStorage implements UserStorage {
+public abstract class InMemoryUserStorage implements UserStorage {
 
     private final Map<Long, User> users = new HashMap<>();
 
@@ -79,6 +77,20 @@ public class InMemoryUserStorage implements UserStorage {
     public void addFriend(long userId, long friendId) {
         findUserById(userId).getFriends().add(friendId);
         findUserById(friendId).getFriends().add(userId);
+    }
+
+    @Override
+    public void removeFriend(long userId, long friendId) {
+        User user = findUserById(userId);
+        User friend = findUserById(friendId);
+        if (user.getFriends().contains(friend.getId()) &&
+                friend.getFriends().contains(userId)) {
+            user.getFriends().remove(friendId);
+            friend.getFriends().remove(userId);
+        } else {
+            //throw new ValidationException("Пользователи с id = " + userId + " и с id = " + friendId + " не дружат");
+            log.info("Пользователи с id = " + userId + " и с id = " + friendId + " не дружат");
+        }
     }
 
     // вспомогательный метод для генерации идентификатора нового поста

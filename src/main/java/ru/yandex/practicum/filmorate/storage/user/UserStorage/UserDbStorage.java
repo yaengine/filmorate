@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,48 +15,75 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
+@Slf4j
 @Component
 @Qualifier("userDbStorage")
 @RequiredArgsConstructor
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbc;
     private final RowMapper<User> mapper;
+    private final RowMapper<Long> frendIdsRowMapper;
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM users";
+    private static final String FIND_FRIENDS_BY_ID = "SELECT f.friend_id from FRIENDSHIPS f \n" +
+            "WHERE f.user_id = ? ";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM users WHERE user_id = ?";
     private static final String INSERT_QUERY = "INSERT INTO users(user_name, email, login, birthday) " +
             "VALUES (?, ?, ?, ?)";
     private static final String UPDATE_QUERY = "UPDATE users SET user_name = ?, email = ?, login = ?, birthday = ?  " +
             "WHERE user_id = ?";
     private static final String ADD_FRIENDS = "INSERT INTO friendships (user_id, friend_id, status) " +
-            "VALUES (?, ?, false) ON CONFLICT DO NOTHING; ";
-    private static final String CHECK_FRIENDSHIP_STATUS =
-            "UPDATE friendships f " +
-            "SET STATUS = CASE WHEN (select count(*) " +
-                                    "  from friendships f1" +
-                                    " WHERE (f1.user_id = :1 AND f1.friend_id = :2) " +
-                                    "    OR (f1.user_id = :2 AND f1.friend_id = :1)) = 2 THEN TRUE " +
-                            "  ELSE FALSE END " +
-            "WHERE (f.user_id = :1 AND f.friend_id = :2) " +
-            "   OR (f.user_id = :2 AND f.friend_id = :1) ";
+            "VALUES (?, ?, FALSE) ";
+    private static final String REMOVE_FRIENDS = "DELETE FROM FRIENDSHIPS f \n" +
+            "WHERE f.user_id = ? AND f.friend_id = ? ";
+    private static final String CHECK_FRIEND_STATUS = "UPDATE friendships AS f \n" +
+            "SET STATUS = CASE WHEN (select count(*) from friendships f1 \n" +
+                              "WHERE (f1.user_id = :1 AND f1.friend_id = :2) \n" +
+                                 "OR (f1.friend_id = :1 AND f1.user_id = :2)) = 2 THEN TRUE \n" +
+                              "ELSE FALSE END \n" +
+            "WHERE (f.user_id = :1 AND f.friend_id = :2)\n" +
+            "OR (f.friend_id = :1 AND f.user_id = :2) ";
 
     @Override
     public Collection<User> findAll() {
+        Collection<User> users = jdbc.query(FIND_ALL_QUERY, mapper);
+        for (User user : users) {
+            user.setFriends(findFriendByUserId(user.getId()));
+        }
         return jdbc.query(FIND_ALL_QUERY, mapper);
     }
 
     public User findUserById(long userId) {
         try {
-            return jdbc.queryForObject(FIND_BY_ID_QUERY, mapper, userId);
+            User user = jdbc.queryForObject(FIND_BY_ID_QUERY, mapper, userId);
+            if (user != null) {
+                Set<Long> friendIds = findFriendByUserId(user.getId());
+                if (friendIds != null) {
+                    user.setFriends(friendIds);
+                }
+            } else {
+                throw new EmptyResultDataAccessException(0);
+            }
+            return user;
         } catch (EmptyResultDataAccessException ignored) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
     }
 
+    public Set<Long> findFriendByUserId(Long userId) {
+        try {
+            return new HashSet<>(jdbc.query(FIND_FRIENDS_BY_ID,
+                                            new Object[]{userId},
+                                            frendIdsRowMapper));
+        } catch (EmptyResultDataAccessException ignored) {
+            log.info("У пользователя с id = {} нет друзей", userId);
+            return null;
+        }
+    }
+
+    @Override
     public User create(User user) {
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(connection -> {
@@ -94,14 +122,24 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void addFriend(long userId, long friendId) {
-        NamedParameterJdbcTemplate namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbc);
         jdbc.update(ADD_FRIENDS,
                     userId,
                     friendId);
+        checkFriendStatus(userId, friendId);
+    }
 
+    @Override
+    public void removeFriend(long userId, long friendId) {
+        jdbc.update(REMOVE_FRIENDS,
+                userId,
+                friendId);
+    }
+
+    private void checkFriendStatus(long userId, long friendId) {
+        NamedParameterJdbcTemplate namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbc);
         Map<String, Object> params = new HashMap<>();
         params.put("1", userId);
         params.put("2", friendId);
-        namedParameterJdbcTemplate.update(CHECK_FRIENDSHIP_STATUS, params);
+        namedParameterJdbcTemplate.update(CHECK_FRIEND_STATUS, params);
     }
 }

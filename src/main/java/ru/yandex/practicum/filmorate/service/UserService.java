@@ -101,20 +101,15 @@ public class UserService {
     }
 
     public void addFriend(long userId, long friendId) {
-        userStorage.addFriend(userId, friendId);
+        User user = userStorage.findUserById(userId);
+        User friend = userStorage.findUserById(friendId);
+        userStorage.addFriend(user.getId(), friend.getId());
     }
 
     public void removeFriend(long userId, long friendId) {
         User user = userStorage.findUserById(userId);
         User friend = userStorage.findUserById(friendId);
-        if (user.getFriends().contains(friend.getId()) &&
-                friend.getFriends().contains(userId)) {
-            user.getFriends().remove(friendId);
-            friend.getFriends().remove(userId);
-        } else {
-            //throw new ValidationException("Пользователи с id = " + userId + " и с id = " + friendId + " не дружат");
-            log.info("Пользователи с id = " + userId + " и с id = " + friendId + " не дружат");
-        }
+        userStorage.removeFriend(user.getId(), friend.getId());
     }
 
     public Collection<User> getFriends(long userId) {
