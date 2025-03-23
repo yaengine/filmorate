@@ -72,7 +72,7 @@ public class UserDbStorage implements UserStorage {
         }
     }
 
-    public Set<Long> findFriendByUserId(Long userId) {
+    private Set<Long> findFriendByUserId(Long userId) {
         try {
             return new HashSet<>(jdbc.query(FIND_FRIENDS_BY_ID,
                                             new Object[]{userId},

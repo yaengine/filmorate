@@ -14,7 +14,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @Qualifier("inMemoryUserStorage")
-public abstract class InMemoryUserStorage implements UserStorage {
+public class InMemoryUserStorage implements UserStorage {
 
     private final Map<Long, User> users = new HashMap<>();
 

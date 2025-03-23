@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.directory.DirectoryStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserStorage;
 
@@ -58,6 +59,12 @@ public class FilmService {
             log.error(DURATION_ERR);
             throw new ValidationException(DURATION_ERR);
         }
+
+        if (film.getName() == null || film.getName().isBlank()) {
+            log.error(EMPTY_NAME_ERR);
+            throw new ValidationException(EMPTY_NAME_ERR);
+        }
+
         log.trace("Проверки пройдены");
 
         return filmStorage.create(film);

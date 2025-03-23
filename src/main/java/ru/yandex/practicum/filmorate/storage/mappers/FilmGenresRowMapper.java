@@ -7,9 +7,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 @Component
-public class FrendIdsRowMapper implements RowMapper<Long> {
+public class FilmGenresRowMapper implements RowMapper<Long> {
     @Override
     public Long mapRow(ResultSet resultSet, int rowNum) throws SQLException {
-        return resultSet.getLong("friend_id");
+        return resultSet.getLong("genre_id");
         }
 }
