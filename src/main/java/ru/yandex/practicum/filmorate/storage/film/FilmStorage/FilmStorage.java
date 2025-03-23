@@ -13,4 +13,8 @@ public interface FilmStorage {
     public Film update(Film newFilm);
 
     public Film findFilmById(long id);
+
+    public void addLike(long filmId, long userId);
+
+    public void removeLike(long filmId, long userId);
 }

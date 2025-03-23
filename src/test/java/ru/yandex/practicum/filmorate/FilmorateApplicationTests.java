@@ -6,12 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.RowMapper;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.directory.DirectoryStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage.FilmDbStorage;
-import ru.yandex.practicum.filmorate.storage.mappers.FilmRowMapper;
-import ru.yandex.practicum.filmorate.storage.mappers.FrendIdsRowMapper;
-import ru.yandex.practicum.filmorate.storage.mappers.UserRowMapper;
+import ru.yandex.practicum.filmorate.storage.mappers.*;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserDbStorage;
 
 import java.time.LocalDate;
@@ -24,12 +25,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@Import({UserDbStorage.class, UserRowMapper.class, FilmDbStorage.class, FilmRowMapper.class, FrendIdsRowMapper.class})
+@Import({UserDbStorage.class, UserRowMapper.class, FilmDbStorage.class, FilmRowMapper.class, FrendIdsRowMapper.class,
+		DirectoryStorage.class, GenreRowMapper.class, MpaRowMapper.class})
 class FilmoRateApplicationTests {
 	@Autowired
 	private UserDbStorage userStorage;
 	@Autowired
 	private FilmDbStorage filmStorage;
+	@Autowired
+	private DirectoryStorage directoryStorage;
 
     @Test
 	public void testFindUserById() {
@@ -111,6 +115,7 @@ class FilmoRateApplicationTests {
 				.description("FilmDescr")
 				.releaseDate(LocalDate.parse("2001-10-05"))
 				.duration(100)
+				.mpa(Mpa.builder().id(1L).build())
 				.likes(new HashSet<>())
 				.build();
 		newFilm = filmStorage.create(newFilm);
@@ -143,6 +148,7 @@ class FilmoRateApplicationTests {
 				.releaseDate(LocalDate.parse("2001-10-05"))
 				.duration(100)
 				.likes(new HashSet<>())
+				.mpa(Mpa.builder().id(1L).build())
 				.build();
 		updFilm = filmStorage.update(updFilm);
 		Optional<Film> filmOptional = Optional.of(filmStorage.findFilmById(updFilm.getId()));

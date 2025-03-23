@@ -38,6 +38,10 @@ public class FilmService {
         return filmStorage.findAll();
     }
 
+    public Film findFilmById(Long filmId) {
+        return filmStorage.findFilmById(filmId);
+    }
+
     public Film create(Film film) {
         // проверяем выполнение необходимых условий
         log.trace("Начинаем создавать фильм");
@@ -106,11 +110,11 @@ public class FilmService {
     }
 
     public void addLike(long filmId, long userId) {
-        filmStorage.findFilmById(filmId).getLikes().add(userStorage.findUserById(userId).getId());
+        filmStorage.addLike(filmId, userId);
     }
 
     public void removeLike(long filmId, long userId) {
-        filmStorage.findFilmById(filmId).getLikes().remove(userStorage.findUserById(userId).getId());
+        filmStorage.removeLike(filmId, userId);
     }
 
     public Collection<Film> findTopFilms(long count) {

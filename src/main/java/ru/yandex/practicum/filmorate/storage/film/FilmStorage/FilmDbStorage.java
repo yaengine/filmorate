@@ -12,13 +12,14 @@ import ru.yandex.practicum.filmorate.exception.InternalServerException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.directory.DirectoryStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserStorage;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -28,7 +29,9 @@ public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbc;
     private final RowMapper<Film> mapper;
     private final RowMapper<Long> filmGenresRowMapper;
+    private final RowMapper<Long> filmLikesRowMapper;
     private final DirectoryStorage directoryStorage;
+    private final UserDbStorage userDbStorage;
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM films";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM films WHERE film_id = ?";
@@ -37,13 +40,21 @@ public class FilmDbStorage implements FilmStorage {
     private static final String INSERT_FILM_GENRE = "INSERT INTO FILM_GENRE (FILM_ID, GENRE_ID) VALUES (?, ?)";
     private static final String UPDATE_QUERY = "UPDATE films SET film_name = ?, description = ?, release_date = ?, " +
             "duration = ?, mpa_rating_id = ? WHERE film_id = ?";
-    private static final String FIND_FILM_GENRES_QUERY = "SELECT genre_id FROM FILM_GENRE WHERE film_id = ?";
+    private static final String FIND_FILM_GENRES_QUERY = "SELECT genre_id FROM FILM_GENRE WHERE film_id = ? " +
+            "ORDER BY genre_id";
+    private static final String ADD_LIKE = "INSERT INTO LIKES (film_id, user_id) " +
+            "VALUES(?, ?)";
+    private static final String REMOVE_LIKE = "DELETE FROM LIKES " +
+            "WHERE film_id = ? and user_id = ?";
+    private static final String GET_LIKES_USERS_BY_FILM_ID = "SELECT user_id FROM LIKES " +
+            "WHERE film_id = ?";
 
     @Override
     public Collection<Film> findAll() {
         Collection<Film> films = jdbc.query(FIND_ALL_QUERY, mapper);
         for (Film film : films) {
             addGenresAndMpa(film);
+            addLikes(film);
         }
         return films;
     }
@@ -73,8 +84,10 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(id);
 
-        for (Genre genre : film.getGenres()) {
-            jdbc.update(INSERT_FILM_GENRE, film.getId(), genre.getId());
+        if (film.getGenres() != null) {
+            for (Genre genre : film.getGenres()) {
+                jdbc.update(INSERT_FILM_GENRE, film.getId(), genre.getId());
+            }
         }
 
         return film;
@@ -95,11 +108,29 @@ public class FilmDbStorage implements FilmStorage {
            }
         }
         if (film.getGenres() != null) {
-            Set<Genre> genres = new HashSet<>();
+            TreeSet<Genre> genres = new TreeSet<>(Comparator.comparingLong(Genre::getId));
             for (Genre genre : film.getGenres()) {
                 genres.add(directoryStorage.findGenreById(genre.getId()));
             }
+
             film.setGenres(genres);
+        }
+    }
+
+    private void addLikes(Film film) {
+        if (film.getId() != null) {
+            Set<Long> usersLikes = new HashSet<>();
+            try {
+                usersLikes = new HashSet<>(jdbc.query(GET_LIKES_USERS_BY_FILM_ID,
+                        new Object[]{film.getId()},
+                        filmLikesRowMapper));
+            } catch (EmptyResultDataAccessException ignored) {
+                log.info("У фильма с id = {} нет лайков", film.getId());
+            }
+
+            if (usersLikes != null) {
+                film.setLikes(usersLikes);
+            }
         }
     }
 
@@ -122,10 +153,28 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film findFilmById(long filmId) {
         try {
-            return jdbc.queryForObject(FIND_BY_ID_QUERY, mapper, filmId);
+            Film film = jdbc.queryForObject(FIND_BY_ID_QUERY, mapper, filmId);
+            addLikes(film);
+            return film;
         } catch (EmptyResultDataAccessException ignored) {
             throw new NotFoundException("Фильм с id = " + filmId + " не найден");
         }
+    }
+
+    @Override
+    public void addLike(long filmId, long userId) {
+       Film film = findFilmById(filmId);
+       User user = userDbStorage.findUserById(userId);
+
+       jdbc.update(ADD_LIKE, film.getId(), user.getId());
+    }
+
+    @Override
+    public void removeLike(long filmId, long userId) {
+        Film film = findFilmById(filmId);
+        User user = userDbStorage.findUserById(userId);
+
+        jdbc.update(REMOVE_LIKE, film.getId(), user.getId());
     }
 
     private Set<Long> findGenresByFilmId(Long filmId) {

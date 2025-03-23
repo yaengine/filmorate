@@ -4,10 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage.InMemoryUserStorage;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,6 +17,7 @@ import java.util.Map;
 @Qualifier("inMemoryFilmStorage")
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Long, Film> films = new HashMap<>();
+    private InMemoryUserStorage inMemoryUserStorage;
 
     public Collection<Film> findAll() {
         log.trace("Начинаем возвращать все фильмы");
@@ -68,6 +68,16 @@ public class InMemoryFilmStorage implements FilmStorage {
         } else {
             throw new NotFoundException("Фильм с id = " + id + " не найден");
         }
+    }
+
+    @Override
+    public void addLike(long filmId, long userId) {
+        findFilmById(filmId).getLikes().add(inMemoryUserStorage.findUserById(userId).getId());
+    }
+
+    @Override
+    public void removeLike(long filmId, long userId) {
+        findFilmById(filmId).getLikes().remove(inMemoryUserStorage.findUserById(userId).getId());
     }
 
     // вспомогательный метод для генерации идентификатора нового поста
