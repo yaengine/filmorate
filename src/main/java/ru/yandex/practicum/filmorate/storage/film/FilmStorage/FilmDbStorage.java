@@ -15,7 +15,6 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.directory.DirectoryStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserDbStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserStorage;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -28,8 +27,8 @@ import java.util.*;
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbc;
     private final RowMapper<Film> mapper;
-    private final RowMapper<Long> filmGenresRowMapper;
-    private final RowMapper<Long> filmLikesRowMapper;
+    private final @Qualifier("filmGenresRowMapper") RowMapper<Long> filmGenresRowMapper;
+    private final @Qualifier("filmLikesRowMapper") RowMapper<Long> filmLikesRowMapper;
     private final DirectoryStorage directoryStorage;
     private final UserDbStorage userDbStorage;
 
@@ -154,6 +153,7 @@ public class FilmDbStorage implements FilmStorage {
     public Film findFilmById(long filmId) {
         try {
             Film film = jdbc.queryForObject(FIND_BY_ID_QUERY, mapper, filmId);
+            addGenresAndMpa(film);
             addLikes(film);
             return film;
         } catch (EmptyResultDataAccessException ignored) {

@@ -23,7 +23,7 @@ JOIN films f  ON l.film_id = f.film_id
 WHERE u.user_id = 1
 ```
 
-Узнать какой жанр у фильма с film_id = 1
+Узнать какие жанры у фильма с film_id = 1
 ```SQL
 SELECT g.name
 FROM films f 
@@ -35,7 +35,8 @@ WHERE f.film_id = 1
 ```SQL
 SELECT case when f.user_id = 1 then f.frind_id
             else f.user_id
-       end friend_id     
+       end friend_id,
+       f.status    
 FROM friendships f 
 WHERE (f.user_id = 1 or f.frind_id = 1)
 ```

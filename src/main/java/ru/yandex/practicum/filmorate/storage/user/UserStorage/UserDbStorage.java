@@ -24,7 +24,7 @@ import java.util.*;
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbc;
     private final RowMapper<User> mapper;
-    private final RowMapper<Long> frendIdsRowMapper;
+    private final @Qualifier("frendIdsRowMapper") RowMapper<Long> frendIdsRowMapper;
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM users";
     private static final String FIND_FRIENDS_BY_ID = "SELECT f.friend_id from FRIENDSHIPS f \n" +
@@ -34,9 +34,9 @@ public class UserDbStorage implements UserStorage {
             "VALUES (?, ?, ?, ?)";
     private static final String UPDATE_QUERY = "UPDATE users SET user_name = ?, email = ?, login = ?, birthday = ?  " +
             "WHERE user_id = ?";
-    private static final String ADD_FRIENDS = "INSERT INTO friendships (user_id, friend_id, status) " +
+    private static final String ADD_FRIEND = "INSERT INTO friendships (user_id, friend_id, status) " +
             "VALUES (?, ?, FALSE) ";
-    private static final String REMOVE_FRIENDS = "DELETE FROM FRIENDSHIPS f \n" +
+    private static final String REMOVE_FRIEND = "DELETE FROM FRIENDSHIPS f \n" +
             "WHERE f.user_id = ? AND f.friend_id = ? ";
     private static final String CHECK_FRIEND_STATUS = "UPDATE friendships AS f \n" +
             "SET STATUS = CASE WHEN (select count(*) from friendships f1 \n" +
@@ -122,7 +122,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void addFriend(long userId, long friendId) {
-        jdbc.update(ADD_FRIENDS,
+        jdbc.update(ADD_FRIEND,
                     userId,
                     friendId);
         checkFriendStatus(userId, friendId);
@@ -130,7 +130,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void removeFriend(long userId, long friendId) {
-        jdbc.update(REMOVE_FRIENDS,
+        jdbc.update(REMOVE_FRIEND,
                 userId,
                 friendId);
     }
