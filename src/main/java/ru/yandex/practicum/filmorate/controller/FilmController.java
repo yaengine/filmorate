@@ -20,6 +20,11 @@ public class FilmController {
         return filmService.findAll();
     }
 
+    @GetMapping("/{filmId}")
+    public Film findFilmById(@PathVariable long filmId) {
+        return filmService.findFilmById(filmId);
+    }
+
     @PostMapping
     public Film create(@RequestBody Film film) {
         return filmService.create(film);
