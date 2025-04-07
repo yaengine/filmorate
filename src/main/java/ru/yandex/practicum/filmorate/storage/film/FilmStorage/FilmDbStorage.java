@@ -10,9 +10,11 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.InternalServerException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.director.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.directory.DirectoryStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserDbStorage;
 
@@ -31,6 +33,8 @@ public class FilmDbStorage implements FilmStorage {
     private final @Qualifier("filmLikesRowMapper") RowMapper<Long> filmLikesRowMapper;
     private final DirectoryStorage directoryStorage;
     private final UserDbStorage userDbStorage;
+    private final DirectorStorage directorStorage;
+    private final @Qualifier("filmDirectorsRowMapper") RowMapper<Long> filmDirectorsRowMapper;
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM films";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM films WHERE film_id = ?";
@@ -47,12 +51,14 @@ public class FilmDbStorage implements FilmStorage {
             "WHERE film_id = ? and user_id = ?";
     private static final String GET_LIKES_USERS_BY_FILM_ID = "SELECT user_id FROM LIKES " +
             "WHERE film_id = ?";
+    private static final String FIND_FILM_DIRECTORS_QUERY = "SELECT director_id FROM FILM_DIRECTORS WHERE film_id = ? " +
+            "ORDER BY director_id";
 
     @Override
     public Collection<Film> findAll() {
         Collection<Film> films = jdbc.query(FIND_ALL_QUERY, mapper);
         for (Film film : films) {
-            addGenresAndMpa(film);
+            addAdditionalFields(film);
             addLikes(film);
         }
         return films;
@@ -60,7 +66,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film create(Film film) {
-        addGenresAndMpa(film);
+        addAdditionalFields(film);
 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(connection -> {
@@ -92,27 +98,34 @@ public class FilmDbStorage implements FilmStorage {
         return film;
     }
 
-    private void addGenresAndMpa(Film film) {
+    private void addAdditionalFields(Film film) {
         if (film.getMpa() != null && film.getMpa().getId() != 0) {
             film.setMpa(directoryStorage.findMpaById(film.getMpa().getId()));
         }
         if (film.getId() != null) { //ищем в базе
-           Set<Long> genreIds = findGenresByFilmId(film.getId());
-           if (genreIds != null) {
-               Set<Genre> genres = new HashSet<>();
-               for (Long genreId : genreIds) {
-                   genres.add(Genre.builder().id(genreId).build());
-               }
-               film.setGenres(genres);
-           }
-        }
-        if (film.getGenres() != null) {
-            TreeSet<Genre> genres = new TreeSet<>(Comparator.comparingLong(Genre::getId));
-            for (Genre genre : film.getGenres()) {
-                genres.add(directoryStorage.findGenreById(genre.getId()));
+            Set<Long> genreIds = findGenresByFilmId(film.getId());
+            if (genreIds != null) {
+                Set<Genre> genres = new HashSet<>();
+                for (Long genreId : genreIds) {
+                    genres.add(Genre.builder().id(genreId).build());
+                }
+                film.setGenres(genres);
             }
-
-            film.setGenres(genres);
+            Set<Long> directorIds = findDirectorsByFilmId(film.getId());
+            if (directorIds != null) {
+                Set<Director> directors = new HashSet<>();
+                for (Long directorId : directorIds) {
+                    directors.add(Director.builder().id(directorId).build());
+                }
+                film.setDirectors(directors);
+            }
+        }
+        if (film.getDirectors() != null) {
+            TreeSet<Director> directors = new TreeSet<>(Comparator.comparingLong(Director::getId));
+            for (Director director : film.getDirectors()) {
+                directors.add(directorStorage.findDirectorById(director.getId()));
+            }
+            film.setDirectors(directors);
         }
     }
 
@@ -145,7 +158,7 @@ public class FilmDbStorage implements FilmStorage {
         if (rowsUpdated == 0) {
             throw new InternalServerException("Не удалось обновить данные");
         }
-        addGenresAndMpa(newFilm);
+        addAdditionalFields(newFilm);
         return newFilm;
     }
 
@@ -153,7 +166,7 @@ public class FilmDbStorage implements FilmStorage {
     public Film findFilmById(long filmId) {
         try {
             Film film = jdbc.queryForObject(FIND_BY_ID_QUERY, mapper, filmId);
-            addGenresAndMpa(film);
+            addAdditionalFields(film);
             addLikes(film);
             return film;
         } catch (EmptyResultDataAccessException ignored) {
@@ -186,5 +199,20 @@ public class FilmDbStorage implements FilmStorage {
             log.info("У фильма с id = {} нет жанров", filmId);
             return null;
         }
+    }
+
+    private Set<Long> findDirectorsByFilmId(Long filmId) {
+        try {
+            return new HashSet<>(jdbc.query(FIND_FILM_DIRECTORS_QUERY,
+                    new Object[]{filmId},
+                    filmDirectorsRowMapper));
+        } catch (EmptyResultDataAccessException ignored) {
+            log.info("У фильма с id = {} нет режисеров", filmId);
+            return null;
+        }
+    }
+
+    public Collection<Film> findFilmsByDirectorId(long directorId, List<String> sortBy) {
+        return null;//filmStorage.findFilmsByDirectorId(directorId, sortBy);
     }
 }
