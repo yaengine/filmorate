@@ -3,17 +3,17 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 @RestController
 @RequestMapping("/films")
 @RequiredArgsConstructor
+@Validated
 public class FilmController {
     @Autowired
     private final FilmService filmService;
@@ -53,12 +53,12 @@ public class FilmController {
         return filmService.findTopFilms(count);
     }
 
-    @GetMapping(value = "/director/{directorId}", params = "sortBy")
+    @GetMapping(value = "/director/{directorId}")
     public Collection<Film> findFilmsByDirectorId(@PathVariable long directorId,
                                                   @RequestParam(required = false)
-                                                  List<@Pattern(regexp = "^(year|likes)$",
+                                                  @Pattern(regexp = "year|likes",
                                                   message = "Неверные параметры сортировки. Допускается: year, likes")
-                                                  String> sortBy) {
+                                                  String sortBy) {
         return filmService.findFilmsByDirectorId(directorId, sortBy);
     }
 }

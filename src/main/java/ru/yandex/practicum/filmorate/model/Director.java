@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 /**
- * Режисер.
+ * Режиссер.
  */
 @Data
 @Builder

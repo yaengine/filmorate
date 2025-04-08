@@ -51,8 +51,20 @@ public class FilmDbStorage implements FilmStorage {
             "WHERE film_id = ? and user_id = ?";
     private static final String GET_LIKES_USERS_BY_FILM_ID = "SELECT user_id FROM LIKES " +
             "WHERE film_id = ?";
-    private static final String FIND_FILM_DIRECTORS_QUERY = "SELECT director_id FROM FILM_DIRECTORS WHERE film_id = ? " +
+    private static final String FIND_FILM_DIRECTORS_QUERY = "SELECT director_id FROM FILM_DIRECTORS " +
+            "WHERE film_id = ? " +
             "ORDER BY director_id";
+    private static final String INSERT_FILM_DIRECTORS = "INSERT INTO FILM_DIRECTORS (FILM_ID, DIRECTOR_ID)" +
+            " VALUES (?, ?)";
+    private static final String DELETE_FILM_DIRECTORS = "DELETE FROM FILM_DIRECTORS " +
+            " WHERE FILM_ID = ?";
+    private static final String FIND_FILMS_BY_DIR = "SELECT F.* FROM FILMS F " +
+            "JOIN FILM_DIRECTORS FD ON (F.FILM_ID = FD.FILM_ID) " +
+            "WHERE FD.DIRECTOR_ID = ? ";
+    private static final String FIND_FILMS_BY_ORDER_BY_YEARS = " ORDER BY F.RELEASE_DATE ";
+    private static final String FIND_FILMS_BY_ORDER_BY_LIKES = " ORDER BY (SELECT COUNT(*) " +
+            " FROM LIKES L " +
+            " WHERE L.FILM_ID = F.FILM_ID) DESC";
 
     @Override
     public Collection<Film> findAll() {
@@ -95,6 +107,12 @@ public class FilmDbStorage implements FilmStorage {
             }
         }
 
+        if (film.getDirectors() != null) {
+            for (Director director : film.getDirectors()) {
+                jdbc.update(INSERT_FILM_DIRECTORS, film.getId(), director.getId());
+            }
+        }
+
         return film;
     }
 
@@ -102,7 +120,9 @@ public class FilmDbStorage implements FilmStorage {
         if (film.getMpa() != null && film.getMpa().getId() != 0) {
             film.setMpa(directoryStorage.findMpaById(film.getMpa().getId()));
         }
-        if (film.getId() != null) { //ищем в базе
+
+        //заполняем ID сущностей при обновлении из БД
+        if (film.getId() != null) {
             Set<Long> genreIds = findGenresByFilmId(film.getId());
             if (genreIds != null) {
                 Set<Genre> genres = new HashSet<>();
@@ -119,6 +139,15 @@ public class FilmDbStorage implements FilmStorage {
                 }
                 film.setDirectors(directors);
             }
+        }
+
+        //Обогащаем сущности наименованиями и при создании и приобновлении
+        if (film.getGenres() != null) {
+            TreeSet<Genre> genres = new TreeSet<>(Comparator.comparingLong(Genre::getId));
+            for (Genre genre : film.getGenres()) {
+                genres.add(directoryStorage.findGenreById(genre.getId()));
+            }
+            film.setGenres(genres);
         }
         if (film.getDirectors() != null) {
             TreeSet<Director> directors = new TreeSet<>(Comparator.comparingLong(Director::getId));
@@ -158,7 +187,21 @@ public class FilmDbStorage implements FilmStorage {
         if (rowsUpdated == 0) {
             throw new InternalServerException("Не удалось обновить данные");
         }
+        Set<Director> newDirectors = newFilm.getDirectors();
         addAdditionalFields(newFilm);
+
+        /**
+        * проверяем были ли изменения режиссеров между тем что прилетело в запросе и что есть в БД
+        * если да, то обновляем их
+         **/
+        if (newDirectors != null && !newFilm.getDirectors().equals(newDirectors)) {
+            jdbc.update(DELETE_FILM_DIRECTORS, newFilm.getId());
+            for (Director director : newDirectors) {
+                jdbc.update(INSERT_FILM_DIRECTORS, newFilm.getId(), director.getId());
+            }
+            //обновим поля
+            addAdditionalFields(newFilm);
+        }
         return newFilm;
     }
 
@@ -207,12 +250,24 @@ public class FilmDbStorage implements FilmStorage {
                     new Object[]{filmId},
                     filmDirectorsRowMapper));
         } catch (EmptyResultDataAccessException ignored) {
-            log.info("У фильма с id = {} нет режисеров", filmId);
+            log.info("У фильма с id = {} нет режиссеров", filmId);
             return null;
         }
     }
 
-    public Collection<Film> findFilmsByDirectorId(long directorId, List<String> sortBy) {
-        return null;//filmStorage.findFilmsByDirectorId(directorId, sortBy);
+    public Collection<Film> findFilmsByDirectorId(long directorId, String sortBy) {
+        String sql = FIND_FILMS_BY_DIR;
+        if (sortBy.contains("year")) {
+            sql += FIND_FILMS_BY_ORDER_BY_YEARS;
+        } else if (sortBy.contains("likes")) {
+            sql += FIND_FILMS_BY_ORDER_BY_LIKES;
+        }
+
+        Collection<Film> films = new ArrayList<>(jdbc.query(sql, new Object[]{directorId}, mapper));
+        for (Film film : films) {
+            addAdditionalFields(film);
+            addLikes(film);
+        }
+        return films;
     }
 }

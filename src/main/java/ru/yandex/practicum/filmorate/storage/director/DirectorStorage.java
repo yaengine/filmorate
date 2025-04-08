@@ -34,7 +34,7 @@ public class DirectorStorage {
         try {
             return jdbc.queryForObject(FIND_DIRECTOR_BY_ID_QUERY, directorMapper, directorId);
         } catch (EmptyResultDataAccessException ignored) {
-            throw new NotFoundException("Режисер с id = " + directorId + " не найден");
+            throw new NotFoundException("Режиссер с id = " + directorId + " не найден");
         }
     }
 

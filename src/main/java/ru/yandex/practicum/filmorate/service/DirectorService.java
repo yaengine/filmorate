@@ -31,8 +31,8 @@ public class DirectorService {
         if (findDirectorById(director.getId()) != null) {
             return drectorStorage.update(director);
         } else {
-            log.error("Режисер с id = {} не найден", director.getId());
-            throw new NotFoundException("Режисер с id = " + director.getId() + " не найден");
+            log.error("Режиссер с id = {} не найден", director.getId());
+            throw new NotFoundException("Режиссер с id = " + director.getId() + " не найден");
         }
     }
 
@@ -40,8 +40,8 @@ public class DirectorService {
         if (findDirectorById(directorId) != null) {
             drectorStorage.delete(directorId);
         } else {
-            log.error("Режисер с id = {} не найден", directorId);
-            throw new NotFoundException("Режисер с id = " + directorId + " не найден");
+            log.error("Режиссер с id = {} не найден", directorId);
+            throw new NotFoundException("Режиссер с id = " + directorId + " не найден");
         }
     }
 
