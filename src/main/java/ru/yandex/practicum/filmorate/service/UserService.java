@@ -124,4 +124,17 @@ public class UserService {
                 .filter(user -> userStorage.findUserById(friendId).getFriends().contains(user.getId()))
                 .collect(Collectors.toList());
     }
+    public void deleteUser(long id){
+        try{
+            userStorage.deleteUser(id);
+            log.trace("Пользователь удален успешно");
+        }
+        catch(NotFoundException e){
+            log.error("Попытка получить несуществующего пользователя");
+            throw new NotFoundException("Пользователь не найден");
+        }
+    }
+    public User findUserById(long id){
+        return userStorage.findUserById(id);
+    }
 }

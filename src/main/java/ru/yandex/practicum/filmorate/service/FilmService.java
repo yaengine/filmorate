@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -123,5 +124,16 @@ public class FilmService {
                         .sorted((f1, f2) -> f2.getLikes().size() - f1.getLikes().size())
                         .limit(count)
                         .collect(Collectors.toList());
+    }
+
+    public void deleteFilm(long id){
+        try {
+            filmStorage.deleteFilm(id);
+            log.trace("Фильм удален успешно");
+        }
+        catch (NotFoundException e) {
+            log.error("Попытка получить несуществующий фильм");
+            throw new NotFoundException("Фильм не найден.");
+        }
     }
 }

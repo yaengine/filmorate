@@ -45,6 +45,7 @@ public class UserDbStorage implements UserStorage {
                               "ELSE FALSE END \n" +
             "WHERE (f.user_id = :1 AND f.friend_id = :2)\n" +
             "OR (f.friend_id = :1 AND f.user_id = :2) ";
+    private static final String DELETE_USER = "DELETE FROM USERS WHERE user_id = ?";
 
     @Override
     public Collection<User> findAll() {
@@ -133,6 +134,11 @@ public class UserDbStorage implements UserStorage {
         jdbc.update(REMOVE_FRIEND,
                 userId,
                 friendId);
+    }
+
+    @Override
+    public void deleteUser(long id) {
+        jdbc.update(DELETE_USER, id);
     }
 
     private void checkFriendStatus(long userId, long friendId) {

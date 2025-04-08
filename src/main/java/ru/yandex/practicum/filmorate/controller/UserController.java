@@ -16,6 +16,9 @@ public class UserController {
     @Autowired
     private final UserService userService;
 
+    @GetMapping("/{userId}")
+    public User findUserById(@PathVariable long userId) {return userService.findUserById(userId);}
+
     @GetMapping
     public Collection<User> findAll() {
         return userService.findAll();
@@ -49,5 +52,10 @@ public class UserController {
     @DeleteMapping("/{userId}/friends/{friendId}")
     public void removeFriends(@PathVariable("userId") Long userId, @PathVariable("friendId") Long friendId) {
         userService.removeFriend(userId, friendId);
+    }
+
+    @DeleteMapping("/{userId}")
+    public void deleteUser(@PathVariable("userId") Long userId) {
+        userService.deleteUser(userId);
     }
 }
