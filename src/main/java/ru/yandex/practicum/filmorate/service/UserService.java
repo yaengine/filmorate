@@ -126,13 +126,7 @@ public class UserService {
     }
 
     public void deleteUser(long id) {
-        try {
-            userStorage.deleteUser(id);
-            log.trace("Пользователь удален успешно");
-        } catch (NotFoundException e) {
-            log.error("Попытка получить несуществующего пользователя");
-            throw new NotFoundException("Пользователь не найден");
-        }
+        userStorage.deleteUser(id);
     }
 
     public User findUserById(long id) {

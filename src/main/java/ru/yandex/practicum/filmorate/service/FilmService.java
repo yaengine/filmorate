@@ -126,12 +126,6 @@ public class FilmService {
     }
 
     public void deleteFilm(long id) {
-        try {
-            filmStorage.deleteFilm(id);
-            log.trace("Фильм удален успешно");
-        } catch (NotFoundException e) {
-            log.error("Попытка получить несуществующий фильм");
-            throw new NotFoundException("Фильм не найден.");
-        }
+        filmStorage.deleteFilm(id);
     }
 }

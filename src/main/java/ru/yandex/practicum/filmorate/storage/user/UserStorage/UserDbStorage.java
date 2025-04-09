@@ -140,6 +140,7 @@ public class UserDbStorage implements UserStorage {
     public void deleteUser(long id) {
         int affectedRows = jdbc.update(DELETE_USER, id);
         if (affectedRows == 0) {
+            log.error("Попытка получить несуществующего пользователя");
             throw new NotFoundException("Пользователь с ID " + id + " не найден");
         }
 }

@@ -180,7 +180,11 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void deleteFilm(long id) {
-        jdbc.update(DELETE_FILM, id);
+        int affectedRows = jdbc.update(DELETE_FILM, id);
+        if (affectedRows == 0) {
+            log.error("Попытка получить несуществующий фильм");
+            throw new NotFoundException("Фильм с ID " + id + " не найден");
+        }
     }
 
     private Set<Long> findGenresByFilmId(Long filmId) {
