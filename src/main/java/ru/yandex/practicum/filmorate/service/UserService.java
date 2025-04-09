@@ -124,4 +124,12 @@ public class UserService {
                 .filter(user -> userStorage.findUserById(friendId).getFriends().contains(user.getId()))
                 .collect(Collectors.toList());
     }
+
+    public void deleteUser(long id) {
+        userStorage.deleteUser(id);
+    }
+
+    public User findUserById(long id) {
+        return userStorage.findUserById(id);
+    }
 }

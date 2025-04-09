@@ -15,6 +15,7 @@ import java.util.Collection;
 @RequiredArgsConstructor
 @Validated
 public class FilmController {
+
     @Autowired
     private final FilmService filmService;
 
@@ -60,5 +61,10 @@ public class FilmController {
                                                   message = "Неверные параметры сортировки. Допускается: year, likes")
                                                   String sortBy) {
         return filmService.findFilmsByDirectorId(directorId, sortBy);
+    }
+
+    @DeleteMapping("/{filmId}")
+    public void deleteFilm(@PathVariable long filmId) {
+        filmService.deleteFilm(filmId);
     }
 }

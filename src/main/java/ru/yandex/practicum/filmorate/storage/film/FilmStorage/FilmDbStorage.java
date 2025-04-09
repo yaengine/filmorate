@@ -51,6 +51,7 @@ public class FilmDbStorage implements FilmStorage {
             "WHERE film_id = ? and user_id = ?";
     private static final String GET_LIKES_USERS_BY_FILM_ID = "SELECT user_id FROM LIKES " +
             "WHERE film_id = ?";
+    private static final String DELETE_FILM = "DELETE FROM FILMS WHERE film_id = ?";
     private static final String FIND_FILM_DIRECTORS_QUERY = "SELECT director_id FROM FILM_DIRECTORS " +
             "WHERE film_id = ? " +
             "ORDER BY director_id";
@@ -233,6 +234,15 @@ public class FilmDbStorage implements FilmStorage {
         jdbc.update(REMOVE_LIKE, film.getId(), user.getId());
     }
 
+    @Override
+    public void deleteFilm(long id) {
+        int affectedRows = jdbc.update(DELETE_FILM, id);
+        if (affectedRows == 0) {
+            log.error("Попытка получить несуществующий фильм");
+            throw new NotFoundException("Фильм с ID " + id + " не найден");
+        }
+    }
+
     private Set<Long> findGenresByFilmId(Long filmId) {
         try {
             return new HashSet<>(jdbc.query(FIND_FILM_GENRES_QUERY,
@@ -271,3 +281,4 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 }
+

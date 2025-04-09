@@ -19,4 +19,6 @@ public interface FilmStorage {
     public void removeLike(long filmId, long userId);
 
     public Collection<Film> findFilmsByDirectorId(long directorId, String sortBy);
+
+    public void deleteFilm(long id);
 }

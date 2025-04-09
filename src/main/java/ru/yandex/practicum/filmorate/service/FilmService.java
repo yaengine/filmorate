@@ -125,6 +125,10 @@ public class FilmService {
                         .collect(Collectors.toList());
     }
 
+    public void deleteFilm(long id) {
+        filmStorage.deleteFilm(id);
+    }
+
     public Collection<Film> findFilmsByDirectorId(long directorId, String sortBy) {
         return filmStorage.findFilmsByDirectorId(directorId, sortBy);
     }
