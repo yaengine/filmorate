@@ -138,8 +138,11 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void deleteUser(long id) {
-        jdbc.update(DELETE_USER, id);
-    }
+        int affectedRows = jdbc.update(DELETE_USER, id);
+        if (affectedRows == 0) {
+            throw new NotFoundException("Пользователь с ID " + id + " не найден");
+        }
+}
 
     private void checkFriendStatus(long userId, long friendId) {
         NamedParameterJdbcTemplate namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbc);

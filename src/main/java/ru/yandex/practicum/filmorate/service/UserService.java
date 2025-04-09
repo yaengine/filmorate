@@ -134,6 +134,7 @@ public class UserService {
             throw new NotFoundException("Пользователь не найден");
         }
     }
+
     public User findUserById(long id){
         return userStorage.findUserById(id);
     }
