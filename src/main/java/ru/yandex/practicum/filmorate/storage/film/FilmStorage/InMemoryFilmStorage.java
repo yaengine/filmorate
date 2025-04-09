@@ -80,6 +80,11 @@ public class InMemoryFilmStorage implements FilmStorage {
         findFilmById(filmId).getLikes().remove(inMemoryUserStorage.findUserById(userId).getId());
     }
 
+    @Override
+    public void deleteFilm(long id) {
+
+    }
+
     // вспомогательный метод для генерации идентификатора нового поста
     private long getNextId() {
         long currentMaxId = films.keySet()

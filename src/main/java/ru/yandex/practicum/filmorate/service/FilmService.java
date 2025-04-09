@@ -124,4 +124,8 @@ public class FilmService {
                         .limit(count)
                         .collect(Collectors.toList());
     }
+
+    public void deleteFilm(long id) {
+        filmStorage.deleteFilm(id);
+    }
 }

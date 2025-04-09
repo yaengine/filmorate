@@ -12,6 +12,7 @@ import java.util.Collection;
 @RequestMapping("/films")
 @RequiredArgsConstructor
 public class FilmController {
+
     @Autowired
     private final FilmService filmService;
 
@@ -48,5 +49,10 @@ public class FilmController {
     @GetMapping("/popular")
     public Collection<Film> findTopFilms(@RequestParam(defaultValue = "10") int count) {
         return filmService.findTopFilms(count);
+    }
+
+    @DeleteMapping("/{filmId}")
+    public void deleteFilm(@PathVariable long filmId) {
+        filmService.deleteFilm(filmId);
     }
 }

@@ -93,6 +93,11 @@ public class InMemoryUserStorage implements UserStorage {
         }
     }
 
+    @Override
+    public void deleteUser(long id) {
+
+    }
+
     // вспомогательный метод для генерации идентификатора нового поста
     private long getNextId() {
         long currentMaxId = users.keySet()
