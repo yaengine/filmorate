@@ -66,6 +66,8 @@ public class FilmDbStorage implements FilmStorage {
     private static final String FIND_FILMS_BY_ORDER_BY_LIKES = " ORDER BY (SELECT COUNT(*) " +
             " FROM LIKES L " +
             " WHERE L.FILM_ID = F.FILM_ID) DESC";
+    private static final String FIND_LIKED_FILMS_IDS = "SELECT film_id FROM likes WHERE user_id = ?";
+
 
     @Override
     public Collection<Film> findAll() {
@@ -279,6 +281,23 @@ public class FilmDbStorage implements FilmStorage {
             addLikes(film);
         }
         return films;
+    }
+
+
+    public Collection<Film> getLikedFilms(long userId) {
+        // 1. Получаем ID лайкнутых фильмов
+        List<Long> filmIds = jdbc.queryForList(FIND_LIKED_FILMS_IDS, Long.class, userId);
+        // 2. Для каждого ID получаем полные данные о фильме
+        Collection<Film> likedFilms = new HashSet<>();
+        for (Long filmId : filmIds) {
+            try {
+                Film film = findFilmById(filmId); // Используем уже готовый метод
+                likedFilms.add(film);
+            } catch (NotFoundException e) {
+                log.warn("Фильм с ID {} был лайкнут, но не найден в БД", filmId);
+            }
+        }
+        return likedFilms;
     }
 }
 
