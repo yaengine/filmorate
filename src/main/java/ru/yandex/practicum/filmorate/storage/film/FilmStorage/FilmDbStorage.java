@@ -66,6 +66,15 @@ public class FilmDbStorage implements FilmStorage {
     private static final String FIND_FILMS_BY_ORDER_BY_LIKES = " ORDER BY (SELECT COUNT(*) " +
             " FROM LIKES L " +
             " WHERE L.FILM_ID = F.FILM_ID) DESC";
+    private static final String SEARCH_FILMS_BY = "WITH p AS (SELECT CAST(? AS VARCHAR) as query) " +
+            "SELECT * FROM FILMS F, P WHERE 1 = 1 ";
+    private static final String SEARCH_FILMS_TITLE = " AND lower(F.FILM_NAME) LIKE '%'||lower(p.query)||'%' ";
+    private static final String SEARCH_FILMS_DIR = " EXISTS (SELECT 1 " +
+            " FROM FILM_DIRECTORS FD" +
+            " JOIN DIRECTORS D ON (FD.DIRECTOR_ID = D.DIRECTOR_ID) " +
+            " WHERE FD.FILM_ID = F.FILM_ID " +
+            " AND lower(D.DIRECTOR_NAME ) LIKE '%'||lower(p.query)||'%') ";
+
 
     @Override
     public Collection<Film> findAll() {
@@ -265,6 +274,7 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
+    @Override
     public Collection<Film> findFilmsByDirectorId(long directorId, String sortBy) {
         String sql = FIND_FILMS_BY_DIR;
         if (sortBy.contains("year")) {
@@ -274,6 +284,26 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         Collection<Film> films = new ArrayList<>(jdbc.query(sql, new Object[]{directorId}, mapper));
+        for (Film film : films) {
+            addAdditionalFields(film);
+            addLikes(film);
+        }
+        return films;
+    }
+
+    public Collection<Film> searchFilmsByQuery(String query, String by) {
+        String sql = SEARCH_FILMS_BY;
+        if (by.equals("title")) {
+            sql += SEARCH_FILMS_TITLE;
+        } else if (by.equals("director")) {
+            sql += " AND " + SEARCH_FILMS_DIR;
+        } else if (by.contains("director") && by.contains("title")) {
+            sql += SEARCH_FILMS_TITLE + " OR " + SEARCH_FILMS_DIR;
+        } else {
+            throw new InternalServerException("Неверные параметры поиска. Допускается: director, title");
+        }
+        sql += FIND_FILMS_BY_ORDER_BY_LIKES;
+        Collection<Film> films = new ArrayList<>(jdbc.query(sql, new String[]{query}, mapper));
         for (Film film : films) {
             addAdditionalFields(film);
             addLikes(film);
