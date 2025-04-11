@@ -30,11 +30,11 @@ public class ReviewDbStorage {
 
     @Transactional
     public Review addReview(Review review) {
-        String ADD_REVIEW_QUERY = "INSERT INTO reviews (content, is_positive, user_id, film_id) " +
+        String addQuery = "INSERT INTO reviews (content, is_positive, user_id, film_id) " +
                 "VALUES (?, ?, ?, ?)";
         KeyHolder key = new GeneratedKeyHolder();
         jdbc.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(ADD_REVIEW_QUERY, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(addQuery, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, review.getContent());
             ps.setBoolean(2, review.getIsPositive());
             ps.setLong(3, review.getUserId());
@@ -51,9 +51,9 @@ public class ReviewDbStorage {
     }
 
     public Review updateReview(Review review) {
-        String UPDATE_REVIEW_QUERY = "UPDATE reviews SET content = ?, is_positive = ? " +
+        String updateQuery = "UPDATE reviews SET content = ?, is_positive = ? " +
                 "WHERE review_id = ?";
-        int update = jdbc.update(UPDATE_REVIEW_QUERY,
+        int update = jdbc.update(updateQuery,
                 review.getContent(),
                 review.getIsPositive(),
                 review.getReviewId()
@@ -66,15 +66,15 @@ public class ReviewDbStorage {
     }
 
     public void deleteReview(Long id) {
-        String DELETE_USEFUL_QUERY = "DELETE FROM useful WHERE review_id = ?";
-        jdbc.update(DELETE_USEFUL_QUERY, id);
+        String deleteUsefulQuery = "DELETE FROM useful WHERE review_id = ?";
+        jdbc.update(deleteUsefulQuery, id);
 
-        String DELETE_REVIEW_QUERY = "DELETE FROM reviews WHERE review_id = ?";
-        jdbc.update(DELETE_REVIEW_QUERY, id);
+        String deleteReviewQuery = "DELETE FROM reviews WHERE review_id = ?";
+        jdbc.update(deleteReviewQuery, id);
     }
 
     public Optional<Review> getReviewById(Long id) {
-        String QUERY = "SELECT r.review_id, r.content, r.is_positive, u.user_name, f.film_name, " +
+        String query = "SELECT r.review_id, r.content, r.is_positive, u.user_name, f.film_name, " +
                 "r.user_id, r.film_id, " +
                 "COALESCE(SUM(CASE WHEN uf.is_like = TRUE THEN 1 ELSE 0 END), 0) AS likes_count, " +
                 "COALESCE(SUM(CASE WHEN uf.is_like = FALSE THEN 1 ELSE 0 END), 0) AS dislikes_count " +
@@ -85,7 +85,7 @@ public class ReviewDbStorage {
                 "WHERE r.review_id = ? " +
                 "GROUP BY r.review_id, r.content, r.is_positive, u.user_name, f.film_name, r.user_id, r.film_id";
         try {
-            Review result = jdbc.queryForObject(QUERY, reviewMapper, id);
+            Review result = jdbc.queryForObject(query, reviewMapper, id);
             return Optional.ofNullable(result);
         } catch (EmptyResultDataAccessException e) {
             throw new NotFoundException("Отзыв с id " + id + " не найден");
