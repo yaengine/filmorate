@@ -67,6 +67,14 @@ public class FilmDbStorage implements FilmStorage {
             " FROM LIKES L " +
             " WHERE L.FILM_ID = F.FILM_ID) DESC";
     private static final String FIND_LIKED_FILMS_IDS = "SELECT film_id FROM likes WHERE user_id = ?";
+    private static final String SEARCH_FILMS_BY = "WITH p AS (SELECT CAST(? AS VARCHAR) as query) " +
+            "SELECT * FROM FILMS F, P WHERE 1 = 1 ";
+    private static final String SEARCH_FILMS_TITLE = " AND lower(F.FILM_NAME) LIKE '%'||lower(p.query)||'%' ";
+    private static final String SEARCH_FILMS_DIR = " EXISTS (SELECT 1 " +
+            " FROM FILM_DIRECTORS FD" +
+            " JOIN DIRECTORS D ON (FD.DIRECTOR_ID = D.DIRECTOR_ID) " +
+            " WHERE FD.FILM_ID = F.FILM_ID " +
+            " AND lower(D.DIRECTOR_NAME ) LIKE '%'||lower(p.query)||'%') ";
 
 
     @Override
@@ -267,6 +275,7 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
+    @Override
     public Collection<Film> findFilmsByDirectorId(long directorId, String sortBy) {
         String sql = FIND_FILMS_BY_DIR;
         if (sortBy.contains("year")) {
@@ -283,21 +292,40 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
-
-    public Collection<Film> getLikedFilms(long userId) {
-        // 1. Получаем ID лайкнутых фильмов
-        List<Long> filmIds = jdbc.queryForList(FIND_LIKED_FILMS_IDS, Long.class, userId);
-        // 2. Для каждого ID получаем полные данные о фильме
-        Collection<Film> likedFilms = new HashSet<>();
-        for (Long filmId : filmIds) {
-            try {
-                Film film = findFilmById(filmId); // Используем уже готовый метод
-                likedFilms.add(film);
-            } catch (NotFoundException e) {
-                log.warn("Фильм с ID {} был лайкнут, но не найден в БД", filmId);
-            }
+public Collection<Film> getLikedFilms(long userId) {
+    // 1. Получаем ID лайкнутых фильмов
+    List<Long> filmIds = jdbc.queryForList(FIND_LIKED_FILMS_IDS, Long.class, userId);
+    // 2. Для каждого ID получаем полные данные о фильме
+    Collection<Film> likedFilms = new HashSet<>();
+    for (Long filmId : filmIds) {
+        try {
+            Film film = findFilmById(filmId); // Используем уже готовый метод
+            likedFilms.add(film);
+        } catch (NotFoundException e) {
+            log.warn("Фильм с ID {} был лайкнут, но не найден в БД", filmId);
         }
-        return likedFilms;
+    }
+    return likedFilms;
+}
+
+public Collection<Film> searchFilmsByQuery(String query, String by) {
+    String sql = SEARCH_FILMS_BY;
+    if (by.equals("title")) {
+        sql += SEARCH_FILMS_TITLE;
+    } else if (by.equals("director")) {
+        sql += " AND " + SEARCH_FILMS_DIR;
+    } else if (by.contains("director") && by.contains("title")) {
+        sql += SEARCH_FILMS_TITLE + " OR " + SEARCH_FILMS_DIR;
+    } else {
+        throw new InternalServerException("Неверные параметры поиска. Допускается: director, title");
+    }
+    sql += FIND_FILMS_BY_ORDER_BY_LIKES;
+    Collection<Film> films = new ArrayList<>(jdbc.query(sql, new String[]{query}, mapper));
+    for (Film film : films) {
+        addAdditionalFields(film);
+        addLikes(film);
+    }
+    return films;
     }
 }
 

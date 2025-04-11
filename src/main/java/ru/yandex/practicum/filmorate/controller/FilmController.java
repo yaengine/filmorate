@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,8 +69,19 @@ public class FilmController {
         filmService.deleteFilm(filmId);
     }
 
-    @GetMapping("/common")
-    public Collection<Film> findCommonFilms(@RequestParam long userId, @RequestParam long friendId) {
+  @GetMapping("/common")
+    public Collection<Film> findCommonFilms(@RequestParam long userId, 
+                                          @RequestParam long friendId) {
         return filmService.findCommonFilms(userId, friendId);
+    }
+    
+    @GetMapping("/search")
+    public Collection<Film> searchFilmsByQuery(
+            @RequestParam String query,
+            @RequestParam @Valid 
+            @Pattern(regexp = "^(director|title|director,title|title,director)$",
+                    message = "Неверные параметры поиска. Допускается: director, title") 
+            String by) {
+        return filmService.searchFilmsByQuery(query, by);
     }
 }

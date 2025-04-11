@@ -23,4 +23,7 @@ public interface FilmStorage {
     public void deleteFilm(long id);
 
     public Collection<Film> getLikedFilms(long userId);
+
+    public Collection<Film> searchFilmsByQuery(String query, String by);
+    
 }

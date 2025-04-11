@@ -135,21 +135,25 @@ public class FilmService {
         return filmStorage.findFilmsByDirectorId(directorId, sortBy);
     }
 
-    public List<Film> findCommonFilms(long userId, long friendId) {
-        Collection<Film> userFilms;
-        Collection<Film> friendFilms;
-        try {
-            userFilms = filmStorage.getLikedFilms(userId);
-            friendFilms = filmStorage.getLikedFilms(friendId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new NotFoundException("Один из пользователей не найден");
-        }
+public List<Film> findCommonFilms(long userId, long friendId) {
+    Collection<Film> userFilms;
+    Collection<Film> friendFilms;
+    try {
+        userFilms = filmStorage.getLikedFilms(userId);
+        friendFilms = filmStorage.getLikedFilms(friendId);
+    } catch (EmptyResultDataAccessException e) {
+        throw new NotFoundException("Один из пользователей не найден");
+    }
 
-        List<Film> commonFilms = userFilms.stream()
-                .filter(friendFilms::contains)
-                .collect(Collectors.toList());
+    List<Film> commonFilms = userFilms.stream()
+            .filter(friendFilms::contains)
+            .collect(Collectors.toList());
 
-        commonFilms.sort((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()));
-        return commonFilms;
+    commonFilms.sort((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()));
+    return commonFilms;
+}
+
+public Collection<Film> searchFilmsByQuery(String query, String by) {
+    return filmStorage.searchFilmsByQuery(query, by);
     }
 }
