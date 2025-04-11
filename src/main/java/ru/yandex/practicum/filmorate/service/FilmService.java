@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -12,6 +13,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserStorage;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -133,7 +135,25 @@ public class FilmService {
         return filmStorage.findFilmsByDirectorId(directorId, sortBy);
     }
 
-    public Collection<Film> searchFilmsByQuery(String query, String by) {
-        return filmStorage.searchFilmsByQuery(query, by);
+public List<Film> findCommonFilms(long userId, long friendId) {
+    Collection<Film> userFilms;
+    Collection<Film> friendFilms;
+    try {
+        userFilms = filmStorage.getLikedFilms(userId);
+        friendFilms = filmStorage.getLikedFilms(friendId);
+    } catch (EmptyResultDataAccessException e) {
+        throw new NotFoundException("Один из пользователей не найден");
+    }
+
+    List<Film> commonFilms = userFilms.stream()
+            .filter(friendFilms::contains)
+            .collect(Collectors.toList());
+
+    commonFilms.sort((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()));
+    return commonFilms;
+}
+
+public Collection<Film> searchFilmsByQuery(String query, String by) {
+    return filmStorage.searchFilmsByQuery(query, by);
     }
 }
