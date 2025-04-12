@@ -326,22 +326,5 @@ public Collection<Film> searchFilmsByQuery(String query, String by) {
     }
     return films;
     }
-
-    private void getLik(Film film) {
-        if (film.getId() != null) {
-            Set<Long> usersLikes = new HashSet<>();
-            try {
-                usersLikes = new HashSet<>(jdbc.query(GET_LIKES_USERS_BY_FILM_ID,
-                        new Object[]{film.getId()},
-                        filmLikesRowMapper));
-            } catch (EmptyResultDataAccessException ignored) {
-                log.info("У фильма с id = {} нет лайков", film.getId());
-            }
-
-            if (usersLikes != null) {
-                film.setLikes(usersLikes);
-            }
-        }
-    }
 }
 
