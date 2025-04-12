@@ -3,7 +3,9 @@ package ru.yandex.practicum.filmorate.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.RecommendationsService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.Collection;
@@ -15,6 +17,8 @@ public class UserController {
 
     @Autowired
     private final UserService userService;
+    @Autowired
+    private final RecommendationsService recommendationsService;
 
     @GetMapping("/{userId}")
     public User findUserById(@PathVariable long userId) {
@@ -59,5 +63,10 @@ public class UserController {
     @DeleteMapping("/{userId}")
     public void deleteUser(@PathVariable("userId") Long userId) {
         userService.deleteUser(userId);
+    }
+
+    @GetMapping("/{id}/recommendations")
+    public Collection<Film> findRecomendationsByUserId(@PathVariable long id) {
+        return recommendationsService.findRecomendationByUserId(id);
     }
 }

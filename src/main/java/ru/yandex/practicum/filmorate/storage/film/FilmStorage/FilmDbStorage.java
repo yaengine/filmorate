@@ -76,7 +76,6 @@ public class FilmDbStorage implements FilmStorage {
             " WHERE FD.FILM_ID = F.FILM_ID " +
             " AND lower(D.DIRECTOR_NAME ) LIKE '%'||lower(p.query)||'%') ";
 
-
     @Override
     public Collection<Film> findAll() {
         Collection<Film> films = jdbc.query(FIND_ALL_QUERY, mapper);
@@ -326,6 +325,23 @@ public Collection<Film> searchFilmsByQuery(String query, String by) {
         addLikes(film);
     }
     return films;
+    }
+
+    private void getLik(Film film) {
+        if (film.getId() != null) {
+            Set<Long> usersLikes = new HashSet<>();
+            try {
+                usersLikes = new HashSet<>(jdbc.query(GET_LIKES_USERS_BY_FILM_ID,
+                        new Object[]{film.getId()},
+                        filmLikesRowMapper));
+            } catch (EmptyResultDataAccessException ignored) {
+                log.info("У фильма с id = {} нет лайков", film.getId());
+            }
+
+            if (usersLikes != null) {
+                film.setLikes(usersLikes);
+            }
+        }
     }
 }
 

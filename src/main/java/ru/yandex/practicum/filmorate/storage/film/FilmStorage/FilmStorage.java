@@ -25,5 +25,4 @@ public interface FilmStorage {
     public Collection<Film> getLikedFilms(long userId);
 
     public Collection<Film> searchFilmsByQuery(String query, String by);
-    
 }
