@@ -70,6 +70,7 @@ public class UserController {
     @GetMapping("/{id}/feed")
     public List<Feed> getFeed(@PathVariable Long id) {
         return userService.getUserFeed(id);
+    }
 
     @GetMapping("/{id}/recommendations")
     public Collection<Film> findRecomendationsByUserId(@PathVariable long id) {
