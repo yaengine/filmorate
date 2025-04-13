@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Feed;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.RecommendationsService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.Collection;
@@ -17,6 +19,8 @@ public class UserController {
 
     @Autowired
     private final UserService userService;
+    @Autowired
+    private final RecommendationsService recommendationsService;
 
     @GetMapping("/{userId}")
     public User findUserById(@PathVariable long userId) {
@@ -66,5 +70,9 @@ public class UserController {
     @GetMapping("/{id}/feed")
     public List<Feed> getFeed(@PathVariable Long id) {
         return userService.getUserFeed(id);
+
+    @GetMapping("/{id}/recommendations")
+    public Collection<Film> findRecomendationsByUserId(@PathVariable long id) {
+        return recommendationsService.findRecomendationByUserId(id);
     }
 }
