@@ -76,7 +76,6 @@ public class FilmDbStorage implements FilmStorage {
             " WHERE FD.FILM_ID = F.FILM_ID " +
             " AND lower(D.DIRECTOR_NAME ) LIKE '%'||lower(p.query)||'%') ";
 
-
     @Override
     public Collection<Film> findAll() {
         Collection<Film> films = jdbc.query(FIND_ALL_QUERY, mapper);
