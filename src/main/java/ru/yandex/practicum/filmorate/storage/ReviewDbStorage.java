@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.Operation;
 import ru.yandex.practicum.filmorate.storage.mappers.ReviewRowMapper;
 
 import java.sql.PreparedStatement;
@@ -27,6 +29,7 @@ public class ReviewDbStorage {
 
     private final JdbcTemplate jdbc;
     private final ReviewRowMapper reviewMapper;
+    private final FeedDbStorage feedDbStorage;
 
     @Transactional
     public Review addReview(Review review) {
@@ -47,6 +50,7 @@ public class ReviewDbStorage {
         } else {
             throw new ValidationException("Ошибка присвоения id отзыву");
         }
+        feedDbStorage.createFeed(review.getUserId(), reviewId, EventType.REVIEW, Operation.ADD);
         return getReviewById(reviewId).orElseThrow();
     }
 
@@ -62,15 +66,17 @@ public class ReviewDbStorage {
             log.info("Не удалось обновить отзыв с id {}.", review.getReviewId());
             throw new NotFoundException("Отзыв не найден.");
         }
+        feedDbStorage.createFeed(review.getUserId(), review.getReviewId(), EventType.REVIEW, Operation.UPDATE);
         return getReviewById(review.getReviewId()).orElseThrow();
     }
 
     public void deleteReview(Long id) {
+        Review review = getReviewById(id).orElseThrow();
         String deleteUsefulQuery = "DELETE FROM useful WHERE review_id = ?";
         jdbc.update(deleteUsefulQuery, id);
-
         String deleteReviewQuery = "DELETE FROM reviews WHERE review_id = ?";
         jdbc.update(deleteReviewQuery, id);
+        feedDbStorage.createFeed(review.getUserId(), id, EventType.REVIEW, Operation.REMOVE);
     }
 
     public Optional<Review> getReviewById(Long id) {
