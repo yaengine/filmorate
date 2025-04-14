@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.InternalServerException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.Operation;
+import ru.yandex.practicum.filmorate.storage.FeedDbStorage;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -25,6 +28,7 @@ public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbc;
     private final RowMapper<User> mapper;
     private final @Qualifier("frendIdsRowMapper") RowMapper<Long> frendIdsRowMapper;
+    private final FeedDbStorage feedDbStorage;
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM users";
     private static final String FIND_FRIENDS_BY_ID = "SELECT f.friend_id from FRIENDSHIPS f \n" +
@@ -127,6 +131,7 @@ public class UserDbStorage implements UserStorage {
                     userId,
                     friendId);
         checkFriendStatus(userId, friendId);
+        feedDbStorage.createFeed(userId, friendId, EventType.FRIEND, Operation.ADD);
     }
 
     @Override
@@ -134,6 +139,7 @@ public class UserDbStorage implements UserStorage {
         jdbc.update(REMOVE_FRIEND,
                 userId,
                 friendId);
+        feedDbStorage.createFeed(userId, friendId, EventType.FRIEND, Operation.REMOVE);
     }
 
     @Override

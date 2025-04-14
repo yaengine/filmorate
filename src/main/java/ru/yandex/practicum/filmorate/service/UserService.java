@@ -5,10 +5,15 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Feed;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FeedDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserStorage;
 
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,9 +27,11 @@ public class UserService {
     private static final String ID_ERR = "Id должен быть указан";
 
     private final UserStorage userStorage;
+    private final FeedDbStorage feedDbStorage;
 
-    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage, FeedDbStorage feedDbStorage) {
         this.userStorage = userStorage;
+        this.feedDbStorage = feedDbStorage;
     }
 
     public Collection<User> findAll() {
@@ -130,5 +137,10 @@ public class UserService {
 
     public User findUserById(long id) {
         return userStorage.findUserById(id);
+    }
+
+    public List<Feed> getUserFeed(Long id) {
+        findUserById(id);
+        return feedDbStorage.getFeedByUser(id);
     }
 }

@@ -14,6 +14,9 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.Operation;
+import ru.yandex.practicum.filmorate.storage.FeedDbStorage;
 import ru.yandex.practicum.filmorate.storage.director.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.directory.DirectoryStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserDbStorage;
@@ -35,6 +38,7 @@ public class FilmDbStorage implements FilmStorage {
     private final UserDbStorage userDbStorage;
     private final DirectorStorage directorStorage;
     private final @Qualifier("filmDirectorsRowMapper") RowMapper<Long> filmDirectorsRowMapper;
+    private final FeedDbStorage feedDbStorage;
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM films";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM films WHERE film_id = ?";
@@ -233,6 +237,7 @@ public class FilmDbStorage implements FilmStorage {
        User user = userDbStorage.findUserById(userId);
 
        jdbc.update(ADD_LIKE, film.getId(), user.getId());
+       feedDbStorage.createFeed(userId, filmId, EventType.LIKE, Operation.ADD);
     }
 
     @Override
@@ -241,6 +246,7 @@ public class FilmDbStorage implements FilmStorage {
         User user = userDbStorage.findUserById(userId);
 
         jdbc.update(REMOVE_LIKE, film.getId(), user.getId());
+        feedDbStorage.createFeed(userId, filmId, EventType.LIKE, Operation.REMOVE);
     }
 
     @Override
