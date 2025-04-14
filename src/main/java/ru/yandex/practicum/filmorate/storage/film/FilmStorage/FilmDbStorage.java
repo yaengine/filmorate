@@ -21,6 +21,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserDbStorage;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -75,6 +76,16 @@ public class FilmDbStorage implements FilmStorage {
             " JOIN DIRECTORS D ON (FD.DIRECTOR_ID = D.DIRECTOR_ID) " +
             " WHERE FD.FILM_ID = F.FILM_ID " +
             " AND lower(D.DIRECTOR_NAME ) LIKE '%'||lower(p.query)||'%') ";
+    private static final String FIND_FILM_IDS_BY_GENRE =
+            "SELECT FILM_ID FROM FILM_GENRE WHERE GENRE_ID = ?";
+
+    private static final String FIND_FILM_IDS_BY_YEAR =
+            "SELECT FILM_ID FROM FILMS WHERE EXTRACT(YEAR FROM RELEASE_DATE) = ?";
+
+    private static final String FIND_FILM_IDS_BY_GENRE_AND_YEAR =
+            "SELECT f.FILM_ID FROM FILMS f " +
+                    "JOIN FILM_GENRE fg ON f.FILM_ID = fg.FILM_ID " +
+                    "WHERE fg.GENRE_ID = ? AND EXTRACT(YEAR FROM f.RELEASE_DATE) = ?";
 
 
     @Override
@@ -202,8 +213,8 @@ public class FilmDbStorage implements FilmStorage {
         addAdditionalFields(newFilm);
 
         /**
-        * проверяем были ли изменения режиссеров между тем что прилетело в запросе и что есть в БД
-        * если да, то обновляем их
+         * проверяем были ли изменения режиссеров между тем что прилетело в запросе и что есть в БД
+         * если да, то обновляем их
          **/
         if (newDirectors != null && !newFilm.getDirectors().equals(newDirectors)) {
             jdbc.update(DELETE_FILM_DIRECTORS, newFilm.getId());
@@ -230,10 +241,10 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void addLike(long filmId, long userId) {
-       Film film = findFilmById(filmId);
-       User user = userDbStorage.findUserById(userId);
+        Film film = findFilmById(filmId);
+        User user = userDbStorage.findUserById(userId);
 
-       jdbc.update(ADD_LIKE, film.getId(), user.getId());
+        jdbc.update(ADD_LIKE, film.getId(), user.getId());
     }
 
     @Override
@@ -292,40 +303,86 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
-public Collection<Film> getLikedFilms(long userId) {
-    // 1. Получаем ID лайкнутых фильмов
-    List<Long> filmIds = jdbc.queryForList(FIND_LIKED_FILMS_IDS, Long.class, userId);
-    // 2. Для каждого ID получаем полные данные о фильме
-    Collection<Film> likedFilms = new HashSet<>();
-    for (Long filmId : filmIds) {
-        try {
-            Film film = findFilmById(filmId); // Используем уже готовый метод
-            likedFilms.add(film);
-        } catch (NotFoundException e) {
-            log.warn("Фильм с ID {} был лайкнут, но не найден в БД", filmId);
+    public Collection<Film> getLikedFilms(long userId) {
+        // 1. Получаем ID лайкнутых фильмов
+        List<Long> filmIds = jdbc.queryForList(FIND_LIKED_FILMS_IDS, Long.class, userId);
+        // 2. Для каждого ID получаем полные данные о фильме
+        Collection<Film> likedFilms = new HashSet<>();
+        for (Long filmId : filmIds) {
+            try {
+                Film film = findFilmById(filmId); // Используем уже готовый метод
+                likedFilms.add(film);
+            } catch (NotFoundException e) {
+                log.warn("Фильм с ID {} был лайкнут, но не найден в БД", filmId);
+            }
         }
+        return likedFilms;
     }
-    return likedFilms;
-}
 
-public Collection<Film> searchFilmsByQuery(String query, String by) {
-    String sql = SEARCH_FILMS_BY;
-    if (by.equals("title")) {
-        sql += SEARCH_FILMS_TITLE;
-    } else if (by.equals("director")) {
-        sql += " AND " + SEARCH_FILMS_DIR;
-    } else if (by.contains("director") && by.contains("title")) {
-        sql += SEARCH_FILMS_TITLE + " OR " + SEARCH_FILMS_DIR;
-    } else {
-        throw new InternalServerException("Неверные параметры поиска. Допускается: director, title");
+    public Collection<Film> searchFilmsByQuery(String query, String by) {
+        String sql = SEARCH_FILMS_BY;
+        if (by.equals("title")) {
+            sql += SEARCH_FILMS_TITLE;
+        } else if (by.equals("director")) {
+            sql += " AND " + SEARCH_FILMS_DIR;
+        } else if (by.contains("director") && by.contains("title")) {
+            sql += SEARCH_FILMS_TITLE + " OR " + SEARCH_FILMS_DIR;
+        } else {
+            throw new InternalServerException("Неверные параметры поиска. Допускается: director, title");
+        }
+        sql += FIND_FILMS_BY_ORDER_BY_LIKES;
+        Collection<Film> films = new ArrayList<>(jdbc.query(sql, new String[]{query}, mapper));
+        for (Film film : films) {
+            addAdditionalFields(film);
+            addLikes(film);
+        }
+        return films;
     }
-    sql += FIND_FILMS_BY_ORDER_BY_LIKES;
-    Collection<Film> films = new ArrayList<>(jdbc.query(sql, new String[]{query}, mapper));
-    for (Film film : films) {
-        addAdditionalFields(film);
-        addLikes(film);
+
+    private Collection<Film> findFilmsByYear(int year) {
+        List<Long> filmIds = jdbc.queryForList(
+                FIND_FILM_IDS_BY_YEAR,
+                Long.class, year);
+        return convertIdsToFilms(filmIds);
     }
-    return films;
+
+   private Collection<Film> findFilmsByGenre(long genreId) {
+        List<Long> filmIds = jdbc.queryForList(
+                FIND_FILM_IDS_BY_GENRE,
+                Long.class, genreId);
+        return convertIdsToFilms(filmIds);
     }
+
+
+    private Collection<Film> findFilmsByGenreAndYear(long genreId, Integer year) {
+
+        List<Long> filmIds = jdbc.queryForList(
+                FIND_FILM_IDS_BY_GENRE_AND_YEAR,
+                Long.class, genreId, year);
+        return convertIdsToFilms(filmIds);
+    }
+
+    public Collection<Film> findFilmsWithFilters(Long genreId, Integer year) {
+        if (genreId != null && year != null) {
+            return findFilmsByGenreAndYear(genreId, year);
+        } else if (genreId != null) {
+            return findFilmsByGenre(genreId);
+        } else if (year != null) {
+            return findFilmsByYear(year);
+        }
+        return findAll();
+    }
+
+    private Collection<Film> convertIdsToFilms(List<Long> filmIds) {
+        return filmIds.stream()
+                .map(this::findFilmById)
+                .filter(Objects::nonNull)
+                .peek(film -> {
+                addAdditionalFields(film);
+                addLikes(film);
+                })
+                .collect(Collectors.toList());
+    }
+
 }
 

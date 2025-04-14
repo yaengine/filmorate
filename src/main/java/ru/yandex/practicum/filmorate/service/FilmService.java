@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.directory.DirectoryStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserStorage;
 
@@ -28,11 +29,13 @@ public class FilmService {
 
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final DirectoryStorage directoryStorage;
 
     public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("userDbStorage") UserStorage userStorage) {
+                       @Qualifier("userDbStorage") UserStorage userStorage, DirectoryStorage directoryStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.directoryStorage = directoryStorage;
     }
 
     public Collection<Film> findAll() {
@@ -152,6 +155,17 @@ public List<Film> findCommonFilms(long userId, long friendId) {
     commonFilms.sort((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()));
     return commonFilms;
 }
+
+    public Collection<Film> findTopFilmsWithFilters(Long genreId, Integer year) {
+
+        if (genreId != null) {
+            directoryStorage.findGenreById(genreId);
+        }
+        Collection<Film> films = filmStorage.findFilmsWithFilters(genreId, year);
+        return films.stream()
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .collect(Collectors.toList());
+    }
 
 public Collection<Film> searchFilmsByQuery(String query, String by) {
     return filmStorage.searchFilmsByQuery(query, by);
