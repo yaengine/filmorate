@@ -261,7 +261,7 @@ public class FilmDbStorage implements FilmStorage {
             throw new NotFoundException("Фильм с id = " + filmId + " не найден");
         }
     }
-  
+
 @Override
 public void addLike(long filmId, long userId) {
     Film film = findFilmById(filmId);
