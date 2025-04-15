@@ -25,6 +25,7 @@ public class DirectorStorage {
     private static final String CREATE_DIRECTOR = "INSERT INTO directors (director_name) VALUES(?)";
     private static final String UPDATE_DIRECTOR = "UPDATE directors SET director_name = ? WHERE director_id = ?";
     private static final String DELETE_DIRECTOR = "DELETE FROM directors WHERE director_id = ?";
+    private static final String DELETE_FILMS_DIRECTOR = "DELETE FROM FILM_DIRECTORS WHERE director_id = ?";
 
     public Collection<Director> findAllDirectors() {
         return jdbc.query(FIND_ALL_DIRECTORS_QUERY, directorMapper);
@@ -70,5 +71,6 @@ public class DirectorStorage {
 
     public void delete(long directorId) {
         jdbc.update(DELETE_DIRECTOR, directorId);
+        jdbc.update(DELETE_FILMS_DIRECTOR, directorId);
     }
 }
