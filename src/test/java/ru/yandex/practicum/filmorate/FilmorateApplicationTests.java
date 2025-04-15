@@ -39,17 +39,6 @@ class FilmorateApplicationTests {
 
     @Test
 	public void testFindUserById() {
-		Optional<User> userOptional = Optional.of(userStorage.findUserById(1));
-
-		assertThat(userOptional)
-				.isPresent()
-				.hasValueSatisfying(user ->
-						assertThat(user).hasFieldOrPropertyWithValue("id", 1L)
-				);
-	}
-
-	@Test
-	public void testCreateUser() {
 		User newUser = User.builder()
 				.name("UserName")
 				.email("user@email.com")
@@ -58,17 +47,46 @@ class FilmorateApplicationTests {
 				.friends(new HashSet<>())
 				.build();
 		newUser = userStorage.create(newUser);
+
+		Long userId = newUser.getId();
+		Optional<User> userOptional = Optional.of(userStorage.findUserById(userId));
+
+		assertThat(userOptional)
+				.isPresent()
+				.hasValueSatisfying(user ->
+						assertThat(user).hasFieldOrPropertyWithValue("id", userId)
+				);
+	}
+
+	@Test
+	public void testCreateUser() {
+		User newUser = User.builder()
+				.name("User1Name")
+				.email("user1@email.com")
+				.birthday(LocalDate.parse("2001-10-05"))
+				.login("User1Login")
+				.friends(new HashSet<>())
+				.build();
+		newUser = userStorage.create(newUser);
 		Optional<User> userOptional = Optional.of(userStorage.findUserById(newUser.getId()));
 
 		assertThat(userOptional)
 				.isPresent()
 				.hasValueSatisfying(user ->
-						assertThat(user).hasFieldOrPropertyWithValue("email", "user@email.com")
+						assertThat(user).hasFieldOrPropertyWithValue("email", "user1@email.com")
 				);
 	}
 
 	@Test
 	public void testFindAllUsers() {
+		User newUser = User.builder()
+				.name("User2Name")
+				.email("user2@email.com")
+				.birthday(LocalDate.parse("2001-10-05"))
+				.login("User2Login")
+				.friends(new HashSet<>())
+				.build();
+		userStorage.create(newUser);
 		Optional<Collection<User>> userOptional = Optional.of(userStorage.findAll());
 
 		assertThat(userOptional)
@@ -80,12 +98,21 @@ class FilmorateApplicationTests {
 
 	@Test
 	public void testUpdateUser() {
-		User updUser = User.builder()
-				.id(1L)
-				.name("UserName")
-				.email("user@email.com")
+		User newUser = User.builder()
+				.name("User3Name")
+				.email("user3@email.com")
 				.birthday(LocalDate.parse("2001-10-05"))
-				.login("UserLogin")
+				.login("User3Login")
+				.friends(new HashSet<>())
+				.build();
+		newUser = userStorage.create(newUser);
+
+		User updUser = User.builder()
+				.id(newUser.getId())
+				.name("User4Name")
+				.email("user4@email.com")
+				.birthday(LocalDate.parse("2001-10-05"))
+				.login("User4Login")
 				.friends(new HashSet<>())
 				.build();
 		updUser = userStorage.update(updUser);
@@ -94,24 +121,24 @@ class FilmorateApplicationTests {
 		assertThat(userOptional)
 				.isPresent()
 				.hasValueSatisfying(user ->
-						assertThat(user).hasFieldOrPropertyWithValue("email", "user@email.com")
+						assertThat(user).hasFieldOrPropertyWithValue("email", "user4@email.com")
 				);
 	}
 
 	@Test
 	public void testAddFriendUser() {
 		User updUser = User.builder()
-				.name("UserName1")
-				.email("user1@email.com")
+				.name("UserName11")
+				.email("user11@email.com")
 				.birthday(LocalDate.parse("2001-10-05"))
-				.login("User1Login")
+				.login("User11Login")
 				.friends(new HashSet<>())
 				.build();
 		User updUser2 = User.builder()
-				.name("User2Name")
-				.email("user2@email.com")
+				.name("User22Name")
+				.email("user22@email.com")
 				.birthday(LocalDate.parse("2001-10-05"))
-				.login("User2Login")
+				.login("User22Login")
 				.friends(new HashSet<>())
 				.build();
 		updUser = userStorage.create(updUser);
@@ -131,17 +158,17 @@ class FilmorateApplicationTests {
 	@Test
 	public void testRemoveFriendUser() {
 		User updUser = User.builder()
-				.name("UserName1")
-				.email("user1@email.com")
+				.name("UserName5")
+				.email("user5@email.com")
 				.birthday(LocalDate.parse("2001-10-05"))
-				.login("User1Login")
+				.login("User5Login")
 				.friends(new HashSet<>())
 				.build();
 		User updUser2 = User.builder()
-				.name("User2Name")
-				.email("user2@email.com")
+				.name("User25Name")
+				.email("user25@email.com")
 				.birthday(LocalDate.parse("2001-10-05"))
-				.login("User2Login")
+				.login("User25Login")
 				.friends(new HashSet<>())
 				.build();
 		updUser = userStorage.create(updUser);
@@ -160,19 +187,28 @@ class FilmorateApplicationTests {
 
 	@Test
 	public void testFindFilmById() {
-		Optional<Film> filmOptional = Optional.of(filmStorage.findFilmById(1));
+		Film newFilm = Film.builder()
+				.name("FilmName")
+				.description("FilmDescr")
+				.releaseDate(LocalDate.parse("2001-10-05"))
+				.duration(100)
+				.mpa(Mpa.builder().id(1L).build())
+				.likes(new HashSet<>())
+				.build();
+		newFilm = filmStorage.create(newFilm);
+		Long filmId = newFilm.getId();
+		Optional<Film> filmOptional = Optional.of(filmStorage.findFilmById(filmId));
 
 		assertThat(filmOptional)
 				.isPresent()
 				.hasValueSatisfying(film ->
-						assertThat(film).hasFieldOrPropertyWithValue("id", 1L)
+						assertThat(film).hasFieldOrPropertyWithValue("id", filmId)
 				);
 	}
 
 	@Test
 	public void testCreateFilm() {
 		Film newFilm = Film.builder()
-				.id(1L)
 				.name("FilmName")
 				.description("FilmDescr")
 				.releaseDate(LocalDate.parse("2001-10-05"))
@@ -192,6 +228,16 @@ class FilmorateApplicationTests {
 
 	@Test
 	public void testFindAllFilms() {
+		Film newFilm = Film.builder()
+				.name("FilmName")
+				.description("FilmDescr")
+				.releaseDate(LocalDate.parse("2001-10-05"))
+				.duration(100)
+				.mpa(Mpa.builder().id(1L).build())
+				.likes(new HashSet<>())
+				.build();
+		filmStorage.create(newFilm);
+
 		Optional<Collection<Film>> filmOptional = Optional.of(filmStorage.findAll());
 
 		assertThat(filmOptional)
@@ -203,14 +249,24 @@ class FilmorateApplicationTests {
 
 	@Test
 	public void testUpdateFilm() {
-		Film updFilm = Film.builder()
-				.id(1L)
+		Film newFilm = Film.builder()
 				.name("FilmName")
 				.description("FilmDescr")
 				.releaseDate(LocalDate.parse("2001-10-05"))
 				.duration(100)
-				.likes(new HashSet<>())
 				.mpa(Mpa.builder().id(1L).build())
+				.likes(new HashSet<>())
+				.build();
+		newFilm = filmStorage.create(newFilm);
+		Long filmId = newFilm.getId();
+		Film updFilm = Film.builder()
+				.id(filmId)
+				.name("Film1Name")
+				.description("Film1Descr")
+				.releaseDate(LocalDate.parse("2001-10-05"))
+				.duration(100)
+				.likes(new HashSet<>())
+				.mpa(Mpa.builder().id(filmId).build())
 				.build();
 		updFilm = filmStorage.update(updFilm);
 		Optional<Film> filmOptional = Optional.of(filmStorage.findFilmById(updFilm.getId()));
@@ -218,7 +274,7 @@ class FilmorateApplicationTests {
 		assertThat(filmOptional)
 				.isPresent()
 				.hasValueSatisfying(film ->
-						assertThat(film).hasFieldOrPropertyWithValue("name", "FilmName")
+						assertThat(film).hasFieldOrPropertyWithValue("name", "Film1Name")
 				);
 	}
 
