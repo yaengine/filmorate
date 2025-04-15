@@ -37,7 +37,7 @@ public class FilmController {
 
     @PutMapping
     public Film update(@RequestBody Film newFilm) {
-     return filmService.update(newFilm);
+        return filmService.update(newFilm);
     }
 
     @PutMapping("/{filmId}/like/{userId}")
@@ -59,7 +59,7 @@ public class FilmController {
     public Collection<Film> findFilmsByDirectorId(@PathVariable long directorId,
                                                   @RequestParam(required = false)
                                                   @Pattern(regexp = "year|likes",
-                                                  message = "Неверные параметры сортировки. Допускается: year, likes")
+                                                          message = "Неверные параметры сортировки. Допускается: year, likes")
                                                   String sortBy) {
         return filmService.findFilmsByDirectorId(directorId, sortBy);
     }
@@ -69,21 +69,22 @@ public class FilmController {
         filmService.deleteFilm(filmId);
     }
 
-  @GetMapping("/common")
-  public Collection<Film> findCommonFilms(@RequestParam long userId,
-                                          @RequestParam long friendId) {
-    return filmService.findCommonFilms(userId, friendId);
-    }
 
-    @GetMapping("/search")
-    public Collection<Film> searchFilmsByQuery(
-            @RequestParam String query,
-            @RequestParam @Valid
-            @Pattern(regexp = "^(director|title|director,title|title,director)$",
-            message = "Неверные параметры поиска. Допускается: director, title")
-            String by) {
-        return filmService.searchFilmsByQuery(query, by);
-    }
+   @GetMapping("/common")
+public Collection<Film> findCommonFilms(@RequestParam long userId,
+                                        @RequestParam long friendId) {
+    return filmService.findCommonFilms(userId, friendId);
+}
+
+@GetMapping("/search")
+public Collection<Film> searchFilmsByQuery(
+        @RequestParam String query,
+        @RequestParam @Valid
+        @Pattern(regexp = "^(director|title|director,title|title,director)$",
+                message = "Неверные параметры поиска. Допускается: director, title")
+        String by) {
+    return filmService.searchFilmsByQuery(query, by);
+}
 
     @GetMapping("/popular/filter")
     public Collection<Film> findTopFilmsWithFilters(

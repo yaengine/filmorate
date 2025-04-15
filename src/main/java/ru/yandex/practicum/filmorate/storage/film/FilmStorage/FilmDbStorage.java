@@ -14,6 +14,9 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.Operation;
+import ru.yandex.practicum.filmorate.storage.FeedDbStorage;
 import ru.yandex.practicum.filmorate.storage.director.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.directory.DirectoryStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserDbStorage;
@@ -36,6 +39,7 @@ public class FilmDbStorage implements FilmStorage {
     private final UserDbStorage userDbStorage;
     private final DirectorStorage directorStorage;
     private final @Qualifier("filmDirectorsRowMapper") RowMapper<Long> filmDirectorsRowMapper;
+    private final FeedDbStorage feedDbStorage;
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM films";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM films WHERE film_id = ?";
@@ -86,7 +90,6 @@ public class FilmDbStorage implements FilmStorage {
             "SELECT f.FILM_ID FROM FILMS f " +
                     "JOIN FILM_GENRE fg ON f.FILM_ID = fg.FILM_ID " +
                     "WHERE fg.GENRE_ID = ? AND EXTRACT(YEAR FROM f.RELEASE_DATE) = ?";
-
 
     @Override
     public Collection<Film> findAll() {
@@ -238,14 +241,15 @@ public class FilmDbStorage implements FilmStorage {
             throw new NotFoundException("Фильм с id = " + filmId + " не найден");
         }
     }
+  
+@Override
+public void addLike(long filmId, long userId) {
+    Film film = findFilmById(filmId);
+    User user = userDbStorage.findUserById(userId);
 
-    @Override
-    public void addLike(long filmId, long userId) {
-        Film film = findFilmById(filmId);
-        User user = userDbStorage.findUserById(userId);
-
-        jdbc.update(ADD_LIKE, film.getId(), user.getId());
-    }
+    jdbc.update(ADD_LIKE, film.getId(), user.getId());
+    feedDbStorage.createFeed(userId, filmId, EventType.LIKE, Operation.ADD);
+}
 
     @Override
     public void removeLike(long filmId, long userId) {
@@ -253,6 +257,7 @@ public class FilmDbStorage implements FilmStorage {
         User user = userDbStorage.findUserById(userId);
 
         jdbc.update(REMOVE_LIKE, film.getId(), user.getId());
+        feedDbStorage.createFeed(userId, filmId, EventType.LIKE, Operation.REMOVE);
     }
 
     @Override
