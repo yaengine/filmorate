@@ -43,7 +43,7 @@ public class FeedDbStorage {
         }
     }
 
-    public Feed createFeed(Long userId, Long entityId, EventType eventType, Operation operation) {
+    public void createFeed(Long userId, Long entityId, EventType eventType, Operation operation) {
         Feed feed = Feed.builder()
                 .timestamp(System.currentTimeMillis())
                 .userId(userId)
@@ -68,8 +68,8 @@ public class FeedDbStorage {
         } else {
             throw new NotFoundException("Ошибка присвоения id событию");
         }
-        log.info("Создано новое событие с id {}", feedId);
-        return getFeedById(feedId).orElseThrow();
+        log.info("Создано новое событие с id {}, userId {}, entityId {}, eventType {}, operation {}", feedId, userId, entityId, eventType, operation);
+        getFeedById(feedId).orElseThrow();
     }
 
     public List<Feed> getFeedByUser(Long userId) {
