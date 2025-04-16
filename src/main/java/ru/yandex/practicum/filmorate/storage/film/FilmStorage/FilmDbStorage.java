@@ -367,39 +367,31 @@ public void addLike(long filmId, long userId) {
         return films;
     }
 
-    private Collection<Film> findFilmsByYear(int year) {
+    @Override
+    public Collection<Film> findFilmsByYear(int year) {
         List<Long> filmIds = jdbc.queryForList(
                 FIND_FILM_IDS_BY_YEAR,
                 Long.class, year);
         return convertIdsToFilms(filmIds);
     }
 
-   private Collection<Film> findFilmsByGenre(long genreId) {
+   @Override
+   public Collection<Film> findFilmsByGenre(long genreId) {
         List<Long> filmIds = jdbc.queryForList(
                 FIND_FILM_IDS_BY_GENRE,
                 Long.class, genreId);
         return convertIdsToFilms(filmIds);
     }
 
-
-    private Collection<Film> findFilmsByGenreAndYear(long genreId, Integer year) {
-
+    @Override
+    public Collection<Film> findFilmsByGenreAndYear(long genreId, Integer year) {
         List<Long> filmIds = jdbc.queryForList(
                 FIND_FILM_IDS_BY_GENRE_AND_YEAR,
                 Long.class, genreId, year);
         return convertIdsToFilms(filmIds);
     }
 
-    public Collection<Film> findFilmsWithFilters(Long genreId, Integer year) {
-        if (genreId != null && year != null) {
-            return findFilmsByGenreAndYear(genreId, year);
-        } else if (genreId != null) {
-            return findFilmsByGenre(genreId);
-        } else if (year != null) {
-            return findFilmsByYear(year);
-        }
-        return findAll();
-    }
+
 
     private Collection<Film> convertIdsToFilms(List<Long> filmIds) {
         return filmIds.stream()
