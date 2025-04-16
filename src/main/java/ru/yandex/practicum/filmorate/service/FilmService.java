@@ -12,7 +12,6 @@ import ru.yandex.practicum.filmorate.storage.film.FilmStorage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserStorage;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -122,12 +121,11 @@ public class FilmService {
     }
 
     public Collection<Film> findTopFilms(long count) {
-        return filmStorage.findAll().isEmpty() ? new ArrayList<>() :
-                filmStorage.findAll()
-                        .stream()
-                        .sorted((f1, f2) -> f2.getLikes().size() - f1.getLikes().size())
-                        .limit(count)
-                        .collect(Collectors.toList());
+        Collection<Film> allFilms = filmStorage.findAll();
+        return allFilms.stream()
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .limit(count)
+                .collect(Collectors.toList());
     }
 
     public void deleteFilm(long id) {
@@ -156,14 +154,21 @@ public List<Film> findCommonFilms(long userId, long friendId) {
     return commonFilms;
 }
 
-    public Collection<Film> findTopFilmsWithFilters(Long genreId, Integer year) {
+    public Collection<Film> findFilmsByYear(int year) {
+        return sortByLikes(filmStorage.findFilmsByYear(year));
+    }
 
-        if (genreId != null) {
-            directoryStorage.findGenreById(genreId);
-        }
-        Collection<Film> films = filmStorage.findFilmsWithFilters(genreId, year);
+    public Collection<Film> findFilmsByGenre(long genreId) {
+        return sortByLikes(filmStorage.findFilmsByGenre(genreId));
+    }
+
+    public Collection<Film> findFilmsByYearAndGenre(Integer year, long genreId) {
+        return sortByLikes(filmStorage.findFilmsByGenreAndYear(genreId, year));
+    }
+
+    private Collection<Film> sortByLikes(Collection<Film> films) {
         return films.stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .sorted((f1, f2) -> f2.getLikes().size() - f1.getLikes().size())
                 .collect(Collectors.toList());
     }
 

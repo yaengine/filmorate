@@ -26,6 +26,10 @@ public interface FilmStorage {
 
     public Collection<Film> searchFilmsByQuery(String query, String by);
 
-    public Collection<Film> findFilmsWithFilters(Long genreId, Integer year);
+    public Collection<Film> findFilmsByYear(int year);
+
+    public Collection<Film> findFilmsByGenre(long genreId);
+
+    public Collection<Film> findFilmsByGenreAndYear(long genreId, Integer year);
 
 }
