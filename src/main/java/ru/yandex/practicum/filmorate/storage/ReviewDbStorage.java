@@ -50,7 +50,9 @@ public class ReviewDbStorage {
         } else {
             throw new ValidationException("Ошибка присвоения id отзыву");
         }
+        review.setReviewId(reviewId);
         feedDbStorage.createFeed(review.getUserId(), reviewId, EventType.REVIEW, Operation.ADD);
+        log.info("Создан отзыв {} userId {} к фильму filmId {}", getReviewById(reviewId).get(), review.getUserId(), review.getFilmId());
         return getReviewById(reviewId).orElseThrow();
     }
 
@@ -66,8 +68,10 @@ public class ReviewDbStorage {
             log.info("Не удалось обновить отзыв с id {}.", review.getReviewId());
             throw new NotFoundException("Отзыв не найден.");
         }
+        review = getReviewById(review.getReviewId()).orElseThrow();
         feedDbStorage.createFeed(review.getUserId(), review.getReviewId(), EventType.REVIEW, Operation.UPDATE);
-        return getReviewById(review.getReviewId()).orElseThrow();
+        log.info("Отзыв обновлен {} ", getReviewById(review.getReviewId()).get());
+        return review;
     }
 
     public void deleteReview(Long id) {
@@ -77,6 +81,7 @@ public class ReviewDbStorage {
         String deleteReviewQuery = "DELETE FROM reviews WHERE review_id = ?";
         jdbc.update(deleteReviewQuery, id);
         feedDbStorage.createFeed(review.getUserId(), id, EventType.REVIEW, Operation.REMOVE);
+        log.info("Отзыв {} удален  ", id);
     }
 
     public Optional<Review> getReviewById(Long id) {
@@ -108,11 +113,11 @@ public class ReviewDbStorage {
                 "LEFT JOIN (SELECT review_id, COUNT(*) AS dislikes_count FROM useful WHERE is_like = FALSE " +
                 "GROUP BY review_id) dislikes ON dislikes.review_id = r.review_id " +
                 "WHERE r.film_id = ? " +
-                "ORDER BY (likes_count - dislikes_count) DESC " +
+                "ORDER BY (likes_count - dislikes_count) DESC, likes_count DESC  " +
                 "LIMIT ?";
-        List<Review> review = jdbc.query(reviewByFilm, reviewMapper, filmId, count);
-        log.info("Получены отзывы о фильме {}.", review);
-        return review;
+        List<Review> reviews = jdbc.query(reviewByFilm, reviewMapper, filmId, count);
+        log.info("Получены отзывы о фильме id = {} {}. Количество отзывов {}.", filmId, reviews, reviews.size());
+        return reviews;
     }
 
     public List<Review> getAllReviews(int count) {
@@ -128,22 +133,23 @@ public class ReviewDbStorage {
                 "ORDER BY (COALESCE(likes.likes_count, 0) - COALESCE(dislikes.dislikes_count, 0)) DESC " +
                 "LIMIT ?";
         List<Review> reviews = jdbc.query(review, reviewMapper, count);
-        log.info("Получены все отзывы о фильмах {}.", reviews);
+        log.info("Получены отзывы (не более {}) о фильмах {}.", count, reviews);
         return reviews;
     }
 
     public void likeOrDislikeToReview(Long reviewId, Long userId, boolean isLike) {
-        String checkSql = "SELECT * FROM useful WHERE review_id = ? AND user_id = ?";
+        String checkSql = "SELECT is_like FROM useful WHERE review_id = ? AND user_id = ?";
         List<Map<String, Object>> likeDislike = jdbc.queryForList(checkSql, reviewId, userId);
 
         if (!likeDislike.isEmpty()) {
             String updateSql = "UPDATE useful SET is_like = ? WHERE review_id = ? AND user_id = ?";
             jdbc.update(updateSql, isLike, reviewId, userId);
+            log.info("Пользователь id={} изменил {} на {} отзыву c id={}.", userId, !isLike ? "лайк" : "дизлайк", isLike ? "лайк" : "дизлайк", reviewId);
         } else {
             String insertSql = "INSERT INTO useful (review_id, user_id, is_like) VALUES (?, ?, ?)";
             jdbc.update(insertSql, reviewId, userId, isLike);
+            log.info("Пользователь id={} поставил {} отзыву c id={}", userId, isLike ? "лайк" : "дизлайк", reviewId);
         }
-        log.info("Добавлен {} у отзыва {} или обновлен для пользователя {}.", isLike ? "лайк" : "дизлайк", reviewId, userId);
     }
 
     public void deleteLikeOrDislike(Long reviewId, Long userId, boolean isLike) {
