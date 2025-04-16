@@ -90,6 +90,8 @@ public class FilmDbStorage implements FilmStorage {
             "SELECT f.FILM_ID FROM FILMS f " +
                     "JOIN FILM_GENRE fg ON f.FILM_ID = fg.FILM_ID " +
                     "WHERE fg.GENRE_ID = ? AND EXTRACT(YEAR FROM f.RELEASE_DATE) = ?";
+    private static final String DELETE_FILM_GENRES = "DELETE FROM FILM_GENRE " +
+            " WHERE FILM_ID = ?";
 
     @Override
     public Collection<Film> findAll() {
@@ -146,7 +148,7 @@ public class FilmDbStorage implements FilmStorage {
             film.setMpa(directoryStorage.findMpaById(film.getMpa().getId()));
         }
 
-        //заполняем ID сущностей при обновлении из БД
+        //заполняем ID сущностей из БД при обновлении
         if (film.getId() != null) {
             Set<Long> genreIds = findGenresByFilmId(film.getId());
             if (genreIds != null) {
@@ -212,17 +214,35 @@ public class FilmDbStorage implements FilmStorage {
         if (rowsUpdated == 0) {
             throw new InternalServerException("Не удалось обновить данные");
         }
+        Set<Genre> newGenres = newFilm.getGenres();
         Set<Director> newDirectors = newFilm.getDirectors();
         addAdditionalFields(newFilm);
+
+        /**
+         * проверяем были ли изменения жанров между тем что прилетело в запросе и что есть в БД
+         * если да, то обновляем их
+         **/
+        if (!newFilm.getGenres().equals(newGenres)) {
+            jdbc.update(DELETE_FILM_GENRES, newFilm.getId());
+            if (newGenres != null) {
+                for (Genre genre : newGenres) {
+                    jdbc.update(INSERT_FILM_GENRE, newFilm.getId(), genre.getId());
+                }
+            }
+            //обновим поля
+            addAdditionalFields(newFilm);
+        }
 
         /**
          * проверяем были ли изменения режиссеров между тем что прилетело в запросе и что есть в БД
          * если да, то обновляем их
          **/
-        if (newDirectors != null && !newFilm.getDirectors().equals(newDirectors)) {
+        if (!newFilm.getDirectors().equals(newDirectors)) {
             jdbc.update(DELETE_FILM_DIRECTORS, newFilm.getId());
-            for (Director director : newDirectors) {
-                jdbc.update(INSERT_FILM_DIRECTORS, newFilm.getId(), director.getId());
+            if (newDirectors != null) {
+                for (Director director : newDirectors) {
+                    jdbc.update(INSERT_FILM_DIRECTORS, newFilm.getId(), director.getId());
+                }
             }
             //обновим поля
             addAdditionalFields(newFilm);
@@ -241,7 +261,7 @@ public class FilmDbStorage implements FilmStorage {
             throw new NotFoundException("Фильм с id = " + filmId + " не найден");
         }
     }
-  
+
 @Override
 public void addLike(long filmId, long userId) {
     Film film = findFilmById(filmId);
@@ -301,6 +321,9 @@ public void addLike(long filmId, long userId) {
         }
 
         Collection<Film> films = new ArrayList<>(jdbc.query(sql, new Object[]{directorId}, mapper));
+        if (films.isEmpty()) {
+            throw new NotFoundException("Фильмов не найдено");
+        }
         for (Film film : films) {
             addAdditionalFields(film);
             addLikes(film);

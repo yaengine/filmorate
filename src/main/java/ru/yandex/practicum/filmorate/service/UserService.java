@@ -58,6 +58,9 @@ public class UserService {
             log.error(DUPL_EMAIL_ERR);
             throw new ValidationException(DUPL_EMAIL_ERR);
         }
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
         log.trace("Проверки пройдены");
 
         return userStorage.create(user);
