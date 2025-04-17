@@ -23,7 +23,6 @@ public class RecommendationsService {
     }
 
     public Collection<Film> findRecomendationByUserId(@PathVariable long userId) {
-        //List<Film> films = (List<Film>) filmStorage.findAll();
         Collection<User> users = userStorage.findAll();
         //ID фильмов, которые лайкнул пользователь
         Set<Long> userFilmIds = filmStorage.getLikedFilms(userId).stream()

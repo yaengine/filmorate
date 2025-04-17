@@ -218,10 +218,8 @@ public class FilmDbStorage implements FilmStorage {
         Set<Director> newDirectors = newFilm.getDirectors();
         addAdditionalFields(newFilm);
 
-        /**
-         * проверяем были ли изменения жанров между тем что прилетело в запросе и что есть в БД
-         * если да, то обновляем их
-         **/
+        /* проверяем были ли изменения жанров между тем что прилетело в запросе и что есть в БД
+           если да, то обновляем их */
         if (!newFilm.getGenres().equals(newGenres)) {
             jdbc.update(DELETE_FILM_GENRES, newFilm.getId());
             if (newGenres != null) {
@@ -233,10 +231,8 @@ public class FilmDbStorage implements FilmStorage {
             addAdditionalFields(newFilm);
         }
 
-        /**
-         * проверяем были ли изменения режиссеров между тем что прилетело в запросе и что есть в БД
-         * если да, то обновляем их
-         **/
+        /* проверяем были ли изменения режиссеров между тем что прилетело в запросе и что есть в БД
+           если да, то обновляем их */
         if (!newFilm.getDirectors().equals(newDirectors)) {
             jdbc.update(DELETE_FILM_DIRECTORS, newFilm.getId());
             if (newDirectors != null) {
