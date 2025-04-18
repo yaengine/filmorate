@@ -2,16 +2,18 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.directory.DirectoryStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage.UserStorage;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,11 +28,13 @@ public class FilmService {
 
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final DirectoryStorage directoryStorage;
 
     public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("userDbStorage") UserStorage userStorage) {
+                       @Qualifier("userDbStorage") UserStorage userStorage, DirectoryStorage directoryStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.directoryStorage = directoryStorage;
     }
 
     public Collection<Film> findAll() {
@@ -117,11 +121,58 @@ public class FilmService {
     }
 
     public Collection<Film> findTopFilms(long count) {
-        return filmStorage.findAll().isEmpty() ? new ArrayList<>() :
-                filmStorage.findAll()
-                        .stream()
-                        .sorted((f1, f2) -> f2.getLikes().size() - f1.getLikes().size())
-                        .limit(count)
-                        .collect(Collectors.toList());
+        Collection<Film> allFilms = filmStorage.findAll();
+        return allFilms.stream()
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .limit(count)
+                .collect(Collectors.toList());
+    }
+
+    public void deleteFilm(long id) {
+        filmStorage.deleteFilm(id);
+    }
+
+    public Collection<Film> findFilmsByDirectorId(long directorId, String sortBy) {
+        return filmStorage.findFilmsByDirectorId(directorId, sortBy);
+    }
+
+public List<Film> findCommonFilms(long userId, long friendId) {
+    Collection<Film> userFilms;
+    Collection<Film> friendFilms;
+    try {
+        userFilms = filmStorage.getLikedFilms(userId);
+        friendFilms = filmStorage.getLikedFilms(friendId);
+    } catch (EmptyResultDataAccessException e) {
+        throw new NotFoundException("Один из пользователей не найден");
+    }
+
+    List<Film> commonFilms = userFilms.stream()
+            .filter(friendFilms::contains)
+            .collect(Collectors.toList());
+
+    commonFilms.sort((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()));
+    return commonFilms;
+}
+
+    public Collection<Film> findFilmsByYear(int year) {
+        return sortByLikes(filmStorage.findFilmsByYear(year));
+    }
+
+    public Collection<Film> findFilmsByGenre(long genreId) {
+        return sortByLikes(filmStorage.findFilmsByGenre(genreId));
+    }
+
+    public Collection<Film> findFilmsByYearAndGenre(Integer year, long genreId) {
+        return sortByLikes(filmStorage.findFilmsByGenreAndYear(genreId, year));
+    }
+
+    private Collection<Film> sortByLikes(Collection<Film> films) {
+        return films.stream()
+                .sorted((f1, f2) -> f2.getLikes().size() - f1.getLikes().size())
+                .collect(Collectors.toList());
+    }
+
+public Collection<Film> searchFilmsByQuery(String query, String by) {
+    return filmStorage.searchFilmsByQuery(query, by);
     }
 }

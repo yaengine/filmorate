@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.InternalServerException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.Operation;
+import ru.yandex.practicum.filmorate.storage.FeedDbStorage;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -25,6 +28,7 @@ public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbc;
     private final RowMapper<User> mapper;
     private final @Qualifier("frendIdsRowMapper") RowMapper<Long> frendIdsRowMapper;
+    private final FeedDbStorage feedDbStorage;
 
     private static final String FIND_ALL_QUERY = "SELECT * FROM users";
     private static final String FIND_FRIENDS_BY_ID = "SELECT f.friend_id from FRIENDSHIPS f \n" +
@@ -45,6 +49,7 @@ public class UserDbStorage implements UserStorage {
                               "ELSE FALSE END \n" +
             "WHERE (f.user_id = :1 AND f.friend_id = :2)\n" +
             "OR (f.friend_id = :1 AND f.user_id = :2) ";
+    private static final String DELETE_USER = "DELETE FROM USERS WHERE user_id = ?";
 
     @Override
     public Collection<User> findAll() {
@@ -126,6 +131,7 @@ public class UserDbStorage implements UserStorage {
                     userId,
                     friendId);
         checkFriendStatus(userId, friendId);
+        feedDbStorage.createFeed(userId, friendId, EventType.FRIEND, Operation.ADD);
     }
 
     @Override
@@ -133,7 +139,17 @@ public class UserDbStorage implements UserStorage {
         jdbc.update(REMOVE_FRIEND,
                 userId,
                 friendId);
+        feedDbStorage.createFeed(userId, friendId, EventType.FRIEND, Operation.REMOVE);
     }
+
+    @Override
+    public void deleteUser(long id) {
+        int affectedRows = jdbc.update(DELETE_USER, id);
+        if (affectedRows == 0) {
+            log.error("Попытка получить несуществующего пользователя");
+            throw new NotFoundException("Пользователь с ID " + id + " не найден");
+        }
+}
 
     private void checkFriendStatus(long userId, long friendId) {
         NamedParameterJdbcTemplate namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbc);
